@@ -1,0 +1,1388 @@
+<title>Felix Plaza 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed model; floor buttons on the left edge, tools on the right edge, one panel at a time. Single light look. */
+:root{
+  --bg:#eceee9; --panel:#ffffff; --panel-2:#f3f5f1; --ink:#1c2321; --muted:#5d6763; --faint:#8d9692; --line:#dce1db;
+  --accent:#1d6b64; --accent-ink:#ffffff; --accent-soft:#dbeeea;
+  --s-signed:#2f9e5a; --s-near:#e3782b; --s-discussion:#4a8fd4; --s-vacant:#a3aba7;
+  --scene-bg:#e7eae5; --scene-floor:#f8f7f3; --scene-line:#7d8581; --scene-wall:#f4f2ec; --scene-slab:#cdd1ca; --scene-boh:#cfd3cc; --scene-fascia:#2b302e;
+  --shadow:0 1px 2px rgba(20,30,28,.06),0 6px 22px rgba(20,30,28,.10);
+  --f-ui:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-label:"Archivo Narrow","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
+  --top:calc(14px + env(safe-area-inset-top,0px)); --bot:calc(14px + env(safe-area-inset-bottom,0px));
+  color-scheme:light;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);overflow:hidden;-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+#stage{position:fixed;inset:0;background:var(--scene-bg)}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.ui{position:fixed;z-index:5}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.eyebrow{font-family:var(--f-label);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.danger{color:#b8402c}
+.btn svg,.icon svg,.tool svg,.seg svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.icon{width:36px;height:36px;padding:0;display:inline-grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.icon:hover{background:var(--panel-2)}
+:is(.btn,.icon,.tool,.seg button,.fl,.chip,.res,.tile,.li):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;height:32px;padding:0 13px;border-radius:7px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.seg.small button{height:28px;padding:0 10px;font-size:12.5px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;background:var(--sc,var(--faint))}
+.s-signed{--sc:var(--s-signed)} .s-near{--sc:var(--s-near)} .s-discussion{--sc:var(--s-discussion)} .s-vacant{--sc:var(--s-vacant)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:color-mix(in srgb,var(--sc) 15%,#fff);color:color-mix(in srgb,var(--sc) 65%,var(--ink))}
+input[type=text],input[type=search],select,textarea{width:100%;height:36px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);padding:0 11px;font-size:13.5px}
+textarea{height:70px;padding:8px 11px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+label.field{display:grid;gap:6px;font-size:12.5px;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:12.5px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted)}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:color-mix(in srgb,var(--sc,var(--accent)) 50%,var(--line));background:color-mix(in srgb,var(--sc,var(--accent)) 10%,#fff)}
+
+/* top left: mark + search */
+#find{top:var(--top);left:var(--gl);display:flex;gap:8px;align-items:center;padding:6px;width:min(380px,calc(100vw - 32px))}
+#find .mark{height:36px;padding:0 10px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:var(--f-label);font-weight:700;font-size:14px;letter-spacing:.05em;flex:none;white-space:nowrap}
+#find input{border:0;background:transparent;height:36px;padding:0 6px;font-size:14px}
+#find input:focus{outline:none}
+#results{top:calc(var(--top) + 56px);left:var(--gl);width:min(380px,calc(100vw - 32px));max-height:min(60vh,520px);overflow:auto;padding:6px}
+.res{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:8px 9px;border-radius:8px;cursor:pointer}
+.res:hover,.res.on{background:var(--panel-2)}
+.res b{font-weight:600;font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.res span{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.resh{font-family:var(--f-label);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 9px 4px;font-weight:600}
+
+#modes{top:var(--top);left:50%;transform:translateX(-50%);padding:5px}
+#corner{top:var(--top);right:var(--gr);display:flex;gap:6px;padding:5px}
+
+/* floors (left edge) */
+#floorbar{left:var(--gl);top:50%;transform:translateY(-50%);display:grid;gap:4px;padding:6px}
+.fl{width:52px;height:44px;border-radius:9px;border:1px solid transparent;background:none;cursor:pointer;display:grid;place-items:center;font-family:var(--f-label);font-weight:700;font-size:15px;color:var(--ink);position:relative}
+.fl:hover{background:var(--panel-2)}
+.fl[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.fl.all{font-size:12px;letter-spacing:.04em;height:34px;color:var(--muted)}
+.fl.all[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.fl .tipx{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--ink);color:#fff;font-family:var(--f-ui);font-weight:500;font-size:12px;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
+.fl:hover .tipx{opacity:1}
+
+/* tools (right edge) */
+#tools{right:var(--gr);top:50%;transform:translateY(-50%);display:grid;gap:2px;padding:6px}
+.tool{width:60px;min-height:54px;border-radius:9px;border:0;background:none;cursor:pointer;display:grid;justify-items:center;align-content:center;gap:4px;font-size:11px;font-weight:500;color:var(--muted);padding:6px 2px}
+.tool:hover{background:var(--panel-2);color:var(--ink)}
+.tool[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.tool svg{width:20px;height:20px}
+#panel{right:calc(var(--gr) + 84px);top:calc(var(--top) + 60px);width:330px;max-height:calc(100% - 150px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;overflow:hidden}
+#panel .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 10px 10px 16px;border-bottom:1px solid var(--line)}
+#panel .ph .eyebrow{color:var(--ink)}
+.pane{padding:16px;overflow:auto;display:grid;gap:14px;align-content:start}
+.pane h2{margin:0;font-family:var(--f-label);font-size:24px;font-weight:700;letter-spacing:.02em;line-height:1.1;text-wrap:balance}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13.5px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;font-family:var(--f-mono);font-size:12.5px}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.5}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap}
+.sep{height:1px;background:var(--line)}
+.palette{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tile{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:9px 6px;display:grid;justify-items:center;gap:5px;cursor:pointer;font-size:11.5px;text-align:center;line-height:1.2;min-height:72px}
+.tile:hover{background:var(--panel-2)}
+.tile[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tile svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.list{display:grid;gap:5px}
+.li{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:var(--panel);text-align:left;width:100%;cursor:default}
+button.li{cursor:pointer} button.li:hover{background:var(--panel-2)}
+.li small{color:var(--muted);font-size:11.5px;display:block}
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:9px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:24px 1fr;gap:9px;font-size:13.5px;line-height:1.4}
+.steps li::before{counter-increment:s;content:counter(s);width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:11.5px;font-weight:700;font-family:var(--f-mono)}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatches button{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);cursor:pointer}
+.swatches button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.empty{padding:6px 2px;color:var(--muted);font-size:13px;line-height:1.5}
+.optrow{display:grid;gap:7px}
+
+/* bottom */
+#legend{left:var(--gl);bottom:var(--bot);padding:8px 12px;display:flex;gap:14px;align-items:center;font-size:12.5px;flex-wrap:wrap}
+#legend span{display:inline-flex;gap:6px;align-items:center}
+#zoom{right:var(--gr);bottom:var(--bot);display:grid;gap:4px;padding:5px}
+#hint{left:50%;transform:translateX(-50%);bottom:var(--bot);padding:8px 14px;font-size:12.5px;color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:min(760px,calc(100vw - 32px))}
+#hint b{color:var(--ink);font-weight:600}
+kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--panel-2);color:var(--ink)}
+#minimap{right:var(--gr);bottom:var(--bot);padding:8px;width:min(340px,42vw);display:grid;gap:6px}
+#minimap.big{width:min(72vh,calc(100vw - 32px))}
+#minimap .mmh{display:flex;align-items:center;justify-content:space-between;gap:6px}
+#minimap .mmh b{font-family:var(--f-label);font-size:14px;letter-spacing:.03em}
+#minimap canvas{width:100%;aspect-ratio:1;border-radius:8px;display:block;cursor:crosshair;background:var(--panel-2)}
+#cross{position:fixed;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;z-index:6;pointer-events:none;display:none}
+#cross::before,#cross::after{content:"";position:absolute;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+#cross::before{left:10px;top:2px;width:2px;height:18px} #cross::after{top:10px;left:2px;height:2px;width:18px}
+body.locked #cross{display:block}
+#look{position:fixed;left:50%;top:calc(50% + 22px);transform:translateX(-50%);z-index:6;pointer-events:none;font-size:13px;font-weight:600;padding:4px 10px;border-radius:7px;background:rgba(28,35,33,.82);color:#fff;white-space:nowrap;display:none}
+#toast{left:50%;transform:translateX(-50%);bottom:calc(var(--bot) + 56px);padding:9px 14px;font-size:13px;pointer-events:none;opacity:0;transition:opacity .2s;z-index:9}
+#toast.on{opacity:1}
+#tip{position:fixed;z-index:8;pointer-events:none;display:none;font-size:12.5px;font-weight:600;padding:5px 9px;border-radius:7px;background:var(--ink);color:#fff;white-space:nowrap;transform:translate(14px,14px)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;z-index:20;background:var(--bg);transition:opacity .4s}
+#loading .box{display:grid;gap:10px;justify-items:center;text-align:center;padding:24px}
+#loading .meter{width:220px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+#loading .meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+#present{left:50%;transform:translateX(-50%);bottom:var(--bot);padding:6px;display:none;gap:6px;align-items:center}
+#present .ttl{min-width:200px;text-align:center;font-family:var(--f-label);font-weight:700;letter-spacing:.03em;font-size:15px;padding:0 8px}
+#joy{position:fixed;left:calc(84px + env(safe-area-inset-left,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:120px;height:120px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.7);display:none;z-index:6;touch-action:none}
+#joy i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:var(--accent);opacity:.85}
+
+/* mode-dependent visibility */
+body.walking #legend,body.walking #zoom{display:none}
+body.walking #tools{top:calc(var(--top) + 58px);transform:none}
+body:not(.walking) #minimap{display:none}
+body.walking.touch #joy{display:block}
+body.uihidden #find,body.uihidden #results,body.uihidden #tools,body.uihidden #panel,body.uihidden #legend,body.uihidden #hint{display:none!important}
+body.presenting .ui:not(#present):not(#toast){display:none!important}
+body.presenting #present{display:flex}
+body.tool .ul,body.tool .pin,body.tool .el{pointer-events:none}
+
+/* 3D labels */
+.ul{pointer-events:auto;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.94);border:1px solid rgba(0,0,0,.08);box-shadow:0 1px 4px rgba(0,0,0,.12);white-space:nowrap;transition:opacity .15s;transform:translateY(-50%)}
+.ul i{width:8px;height:8px;border-radius:50%;background:var(--lc,#999);flex:none}
+.ul b{font-family:var(--f-label);font-size:12.5px;font-weight:700;letter-spacing:.03em;line-height:1.15;color:#1c2321}
+.ul span{font-family:var(--f-mono);font-size:10.5px;color:#5d6763}
+.ul.nodot i{display:none}
+.ul.hid{opacity:0;pointer-events:none}
+.ul.sel{outline:2px solid var(--accent);outline-offset:1px}
+.ul.dim{opacity:.22}
+.ftag{font-family:var(--f-label);font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase;padding:5px 10px;border-radius:7px;background:var(--ink);color:#fff;white-space:nowrap;pointer-events:auto;cursor:pointer}
+.el{pointer-events:auto;cursor:pointer;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--ink);color:#fff;white-space:nowrap;transform:translateY(-100%)}
+.el.note{background:#fff7d6;color:#3b3108;border:1px solid #e9d27c;max-width:230px;white-space:normal;font-weight:500;line-height:1.35}
+.mlabel{font-family:var(--f-mono);font-size:12px;padding:3px 8px;border-radius:6px;background:var(--accent);color:#fff;white-space:nowrap}
+.pin{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--accent);color:#fff;white-space:nowrap;pointer-events:auto;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.pin.esc{background:#fff;color:var(--ink);border:1px solid var(--line)}
+
+@media (max-width: 760px){
+  #modes{top:auto;bottom:var(--bot)} #modes .seg button span{display:none}
+  #find{width:calc(100vw - 32px - 104px)} #find .mark{display:none} #b-ui{width:36px;padding:0} #b-ui span{display:none} .ftag{display:none}
+  #results{width:calc(100vw - 32px)}
+  #floorbar{top:auto;bottom:calc(var(--bot) + 64px);transform:none} .fl{width:44px;height:38px;font-size:13px} .fl .tipx{display:none}
+  #tools{top:auto;bottom:calc(var(--bot) + 64px);transform:none} .tool{width:48px;min-height:44px;font-size:0;gap:0} .tool span{display:none}
+  #panel{left:var(--gl);right:var(--gr);width:auto;top:auto;bottom:calc(var(--bot) + 64px);max-height:55%}
+  #legend,#hint,#zoom{display:none!important}
+  #minimap{width:46vw;bottom:calc(var(--bot) + 64px)}
+  #joy{left:calc(70px + env(safe-area-inset-left,0px));bottom:calc(var(--bot) + 70px)}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<div id="stage"><div id="labels"></div></div>
+<div id="cross"></div><div id="look"></div>
+
+<div id="loading"><div class="box"><div class="eyebrow">Felix Plaza</div><div style="font-size:15px;font-weight:600">Building the 3D model</div><div class="meter"><i id="meter"></i></div><div class="hint" id="loadmsg">Loading floor plans</div></div></div>
+
+<div id="find" class="ui card">
+  <div class="mark" title="Felix Plaza &middot; Brand zoning, 10 Oct 2026">FELIX PLAZA</div>
+  <input type="search" id="q" placeholder="Find a shop or unit" aria-label="Find a shop or unit" autocomplete="off">
+</div>
+<div id="results" class="ui card" hidden></div>
+
+<div id="modes" class="ui card">
+  <div class="seg" role="group" aria-label="View">
+    <button id="m-overview" aria-pressed="true" title="3D view (1)"><svg viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/></svg><span>3D</span></button>
+    <button id="m-plan" aria-pressed="false" title="Plan, like the printed drawing (2)"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h8V4M12 16v4"/></svg><span>Plan</span></button>
+    <button id="m-walk" aria-pressed="false" title="Walk inside (3)"><svg viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.8"/><path d="m9 21 2.5-6 2.5 2v4M8 11l3-3 3 1 2 3M11 8l-1 5"/></svg><span>Walk</span></button>
+  </div>
+</div>
+
+<div id="corner" class="ui card">
+  <button class="icon" id="b-shot" title="Save a picture of this view"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+  <button class="btn" id="b-ui" title="Hide or show the panels (H)"><svg viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.5"/></svg><span id="b-ui-t">Hide panels</span></button>
+</div>
+
+<div id="floorbar" class="ui card" role="group" aria-label="Floors"></div>
+
+<div id="tools" class="ui card" role="toolbar" aria-label="Tools">
+  <button class="tool" data-p="place" aria-pressed="false" title="Place standees, kiosks, decor"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="14" rx="1"/><path d="M6 21h12M12 17v4"/></svg><span>Place</span></button>
+  <button class="tool" data-p="route" aria-pressed="false" title="Directions to a shop"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/></svg><span>Route</span></button>
+  <button class="tool" data-p="measure" aria-pressed="false" title="Measure a distance"><svg viewBox="0 0 24 24"><path d="m3 17 14-14 4 4L7 21z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/></svg><span>Measure</span></button>
+  <button class="tool" data-p="views" aria-pressed="false" title="Saved views and presenting"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/></svg><span>Views</span></button>
+  <button class="tool" data-p="options" aria-pressed="false" title="What to show"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Display</span></button>
+  <button class="tool" data-p="export" aria-pressed="false" title="Save or load a layout file"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>File</span></button>
+</div>
+
+<aside id="panel" class="ui card" hidden aria-label="Panel">
+  <div class="ph"><span class="eyebrow" id="ptitle">Details</span><button class="icon" id="pclose" title="Close (Esc)" style="width:30px;height:30px"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="pane" id="pane"></div>
+</aside>
+
+<div id="legend" class="ui card">
+  <span class="s-signed"><i class="dot"></i>Signed</span>
+  <span class="s-near"><i class="dot"></i>Near to signing</span>
+  <span class="s-discussion"><i class="dot"></i>Under discussion</span>
+  <span class="s-vacant"><i class="dot"></i>Available</span>
+</div>
+<div id="zoom" class="ui card">
+  <button class="icon" id="z-in" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button class="icon" id="z-out" title="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+  <button class="icon" id="z-fit" title="Fit the floor (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</div>
+<div id="hint" class="ui card"></div>
+<div id="minimap" class="ui card">
+  <div class="mmh"><button class="icon" id="mm-down" title="Floor down (Q)" style="width:30px;height:30px"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><b id="mm-floor">Ground Floor</b><span class="btnrow"><button class="icon" id="mm-big" title="Bigger map (M)" style="width:30px;height:30px"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg></button><button class="icon" id="mm-up" title="Floor up (E)" style="width:30px;height:30px"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button></span></div>
+  <canvas id="mm" width="640" height="640" aria-label="Floor map. Click to jump there."></canvas>
+</div>
+<div id="present" class="ui card">
+  <button class="icon" id="p-prev" title="Previous view"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+  <div class="ttl" id="p-title">Overview</div>
+  <button class="icon" id="p-next" title="Next view"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+  <button class="btn" id="p-auto">Auto-play</button>
+  <button class="btn" id="p-exit">Exit</button>
+</div>
+<div id="toast" class="ui card"></div>
+<div id="tip"></div>
+<div id="joy"><i></i></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n, d = 0) => Number(n).toLocaleString('en-IN', { maximumFractionDigits: d, minimumFractionDigits: d });
+const SQFT = 10.7639, DOT = ' \u00b7 ';
+const STATUS = { signed: 'Signed', near: 'Near to signing', discussion: 'Under discussion', vacant: 'Available' };
+const SLAB = 0.35, FLOOR_H = 5.0, GAP = 16, EYE = 1.62;
+const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const toast = (msg, ms = 2600) => { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), ms); };
+const isTouch = matchMedia('(pointer: coarse)').matches; if (isTouch) document.body.classList.add('touch');
+
+/* ---------- state ---------- */
+const S = {
+  mode: 'overview', display: 'stack', focus: 1, explode: 0.7, wallH: 3.2, plan: 1,
+  labelMode: 'name', colorBy: 'status', signs: true, elLabels: true, corridorsOnly: false,
+  filter: new Set(Object.keys(STATUS)), sel: null, panel: null, editing: false,
+  placing: null, grabbing: null, measuring: false, measurePts: [], measures: [], route: null,
+  canWrite: true, overrides: {}, elements: {}, views: {}, presentIdx: 0, uiHidden: false,
+};
+const PREF_KEYS = ['plan', 'labelMode', 'colorBy', 'signs', 'elLabels', 'wallH', 'corridorsOnly'];
+try { const p = JSON.parse(localStorage.getItem('fp3d.prefs2') || '{}'); PREF_KEYS.forEach(k => { if (p[k] !== undefined) S[k] = p[k]; }); } catch (e) {}
+const savePrefs = () => { try { localStorage.setItem('fp3d.prefs2', JSON.stringify(Object.fromEntries(PREF_KEYS.map(k => [k, S[k]])))); } catch (e) {} };
+
+/* ---------- shared store: db when the viewer provides it, else this browser ---------- */
+const Store = {
+  kind: 'local', db: null, subs: {},
+  async init() {
+    const c = window.claude;
+    if (c && typeof c.use === 'function') {
+      try {
+        const [db, user] = await Promise.all([c.use('db'), c.use('user')]);
+        if (db) {
+          this.db = db; this.kind = 'db';
+          if (user && typeof user.can === 'function') { try { if ((await user.can('data.write')) === false) S.canWrite = false; } catch (e) {} }
+        }
+      } catch (e) {}
+    }
+  },
+  local(col) { try { return JSON.parse(localStorage.getItem('fp3d.' + col) || '{}'); } catch (e) { return {}; } },
+  saveLocal(col, o) { try { localStorage.setItem('fp3d.' + col, JSON.stringify(o)); } catch (e) {} },
+  subscribe(col, cb) {
+    if (this.kind === 'db') {
+      const timer = setTimeout(() => toast('The shared layout cannot be reached yet.'), 10000);
+      this.db.collection(col).onSnapshot((snap) => { if (!snap.metadata.fromCache) clearTimeout(timer); const o = {}; snap.docs.forEach(d => { o[d.id] = { ...d.data() }; }); cb(o); },
+        (err) => { clearTimeout(timer); if (err.code === 'revoked') S.canWrite = false; });
+    } else { this.subs[col] = cb; cb(this.local(col)); }
+  },
+  async set(col, id, data) {
+    if (!S.canWrite) { toast('This plan is view-only for you.'); return false; }
+    if (this.kind === 'db') {
+      try { await this.db.collection(col).doc(id).set(data); return true; }
+      catch (e) {
+        if (e.code === 'invalid_argument' || e.code === 'not_granted') { S.canWrite = false; toast('You do not have edit access to this plan.'); renderPanel(); }
+        else if (e.code === 'quota_exceeded') toast('The plan is full. Delete some items and try again.');
+        else toast('Could not save. Check your connection and try again.');
+        return false;
+      }
+    }
+    const o = this.local(col); o[id] = data; this.saveLocal(col, o); this.subs[col]?.(o); return true;
+  },
+  async remove(col, id) {
+    if (!S.canWrite) { toast('This plan is view-only for you.'); return; }
+    if (this.kind === 'db') { try { await this.db.collection(col).doc(id).delete(); } catch (e) { toast('Could not delete. Try again.'); } return; }
+    const o = this.local(col); delete o[id]; this.saveLocal(col, o); this.subs[col]?.(o);
+  },
+};
+const writeQ = {};
+const saveSoon = (col, id, get, ms = 350) => { clearTimeout(writeQ[col + id]); writeQ[col + id] = setTimeout(() => Store.set(col, id, get()), ms); };
+
+/* ---------- load ---------- */
+const setLoad = (p, m) => { $('#meter').style.width = (p * 100) + '%'; if (m) $('#loadmsg').textContent = m; };
+let D;
+try { D = await (await fetch('data.json')).json(); } catch (e) { $('#loadmsg').textContent = 'The plan data could not be loaded. Reload the page to try again.'; throw e; }
+const FL = D.floors; const [TX0, TZ0, TX1, TZ1] = D.meta.texRect;
+const fIndex = Object.fromEntries(FL.map((f, i) => [f.id, i]));
+setLoad(0.2, 'Loading floor drawings');
+let nLoaded = 0;
+const textures = await Promise.all(FL.map(f => new Promise((res) => new THREE.TextureLoader().load(f.tex, (t) => { nLoaded++; setLoad(0.2 + 0.6 * nLoaded / FL.length); res(t); }, undefined, () => res(null)))));
+setLoad(0.85, 'Assembling floors');
+
+/* ---------- renderer, cameras, controls ---------- */
+const stage = $('#stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
+stage.prepend(renderer.domElement); renderer.domElement.tabIndex = 0;
+const labelR = new CSS2DRenderer({ element: $('#labels') }); labelR.setSize(innerWidth, innerHeight);
+textures.forEach(t => { if (!t) return; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); });
+const scene = new THREE.Scene(); scene.background = new THREE.Color(css('--scene-bg'));
+const persp = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 3000);
+const ortho = new THREE.OrthographicCamera(-100, 100, 100, -100, 0.1, 3000);
+let camera = persp;
+const controls = new OrbitControls(persp, renderer.domElement);
+Object.assign(controls, { enableDamping: true, dampingFactor: 0.1, maxPolarAngle: Math.PI * 0.49, minDistance: 3, maxDistance: 650, screenSpacePanning: true, zoomToCursor: true, zoomSpeed: 1.25 });
+const ocontrols = new OrbitControls(ortho, renderer.domElement);
+Object.assign(ocontrols, { enableRotate: false, screenSpacePanning: true, enabled: false, enableDamping: true, dampingFactor: 0.12, minZoom: 0.5, maxZoom: 60, zoomToCursor: true, zoomSpeed: 1.25 });
+ocontrols.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+ocontrols.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
+scene.add(new THREE.HemisphereLight(0xffffff, 0xc4bfb5, 1.2));
+const sun = new THREE.DirectionalLight(0xffffff, 1.3); sun.position.set(-60, 140, 90); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.45); fill.position.set(80, 60, -120); scene.add(fill);
+
+// keep the page itself from zooming, and let wheel over labels drive the 3D view
+addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+['gesturestart', 'gesturechange'].forEach(t => addEventListener(t, (e) => e.preventDefault(), { passive: false }));
+$('#labels').addEventListener('wheel', (e) => { e.preventDefault(); renderer.domElement.dispatchEvent(new WheelEvent('wheel', { deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode, clientX: e.clientX, clientY: e.clientY, ctrlKey: e.ctrlKey, shiftKey: e.shiftKey, bubbles: true, cancelable: true })); }, { passive: false });
+
+/* ---------- materials ---------- */
+const U = { floor: { value: new THREE.Color(css('--scene-floor')) }, line: { value: new THREE.Color(css('--scene-line')) }, plan: { value: 0.75 }, cad: { value: 0 } };
+const M = {
+  slabSide: new THREE.MeshStandardMaterial({ color: css('--scene-slab'), roughness: 0.95 }),
+  wall: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88 }),
+  fascia: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 }),
+  facade: new THREE.MeshStandardMaterial({ color: 0xe9e7e0, roughness: 0.9 }),
+  boh: new THREE.MeshStandardMaterial({ color: css('--scene-boh'), roughness: 0.92 }),
+  column: new THREE.MeshStandardMaterial({ color: 0xf6f5f1, roughness: 0.85 }),
+  parapet: new THREE.MeshStandardMaterial({ color: 0xfbfaf7, roughness: 0.7 }),
+  cap: new THREE.MeshStandardMaterial({ color: 0x3b4240, roughness: 0.5 }),
+  steel: new THREE.MeshStandardMaterial({ color: 0xb9bfbf, roughness: 0.5, metalness: 0.1 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x2a2f2e, roughness: 0.6 }),
+  liftCar: new THREE.MeshStandardMaterial({ color: css('--accent'), roughness: 0.5 }),
+};
+function planMaterial(tex) {
+  const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.93 });
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, { uFloor: U.floor, uLine: U.line, uPlan: U.plan, uCad: U.cad });
+    sh.fragmentShader = 'uniform vec3 uFloor; uniform vec3 uLine; uniform float uPlan; uniform float uCad;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
+      #ifdef USE_MAP
+        vec3 tc = texture2D( map, vMapUv ).rgb;
+        float ink = clamp((1.0 - min(tc.r, min(tc.g, tc.b))) * 1.35, 0.0, 1.0);
+        diffuseColor.rgb = mix(uFloor, mix(uLine, tc, uCad), ink * uPlan);
+      #endif`);
+  };
+  return m;
+}
+
+/* ---------- colours ---------- */
+const PALETTE = ['#e8684a', '#f0a43a', '#d9b62c', '#8cbf4f', '#35a86b', '#22a9a0', '#3a9be0', '#5b78e0', '#8b68dc', '#c862c0', '#e2668d', '#b07d5c', '#4fb3c9', '#e58a5c'];
+const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const shopHex = (brand) => brand ? PALETTE[hash(brand.toUpperCase()) % PALETTE.length] : '#c3c8c4';
+const scheme = () => S.mode === 'walk' ? 'shop' : S.colorBy;
+function unitView(fi, ui) { const u = FL[fi].units[ui]; const ov = S.overrides[`${FL[fi].id}~${u.id}`]; return { brand: ov?.brand ?? u.brand, status: ov?.status ?? u.status, note: ov?.note || '', edited: !!ov }; }
+const brandOf = (fi, ui) => unitView(fi, ui).brand || 'Available';
+function unitHex(fi, ui, sc = scheme()) { const v = unitView(fi, ui); if (sc === 'status') return css('--s-' + v.status); if (sc === 'shop') return shopHex(v.brand); return '#cfd4cf'; }
+const mixHex = (a, b, t) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), t).getHexString();
+
+/* ---------- geometry helpers ---------- */
+const shapeOf = (poly) => { const s = new THREE.Shape(); poly.forEach(([x, z], k) => k ? s.lineTo(x, -z) : s.moveTo(x, -z)); s.closePath(); return s; };
+const pathOf = (poly) => new THREE.Path(poly.map(([x, z]) => new THREE.Vector2(x, -z)));
+const polyArea = (p) => { let a = 0; for (let i = 0; i < p.length; i++) { const [x1, z1] = p[i], [x2, z2] = p[(i + 1) % p.length]; a += x1 * z2 - x2 * z1; } return a / 2; };
+function pointIn(poly, x, z) { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, zi] = poly[i], [xj, zj] = poly[j]; if (((zi > z) !== (zj > z)) && (x < (xj - xi) * (z - zi) / (zj - zi) + xi)) c = !c; } return c; }
+function segDist(px, pz, [ax, az], [bx, bz]) { const dx = bx - ax, dz = bz - az, L = dx * dx + dz * dz; let t = L ? ((px - ax) * dx + (pz - az) * dz) / L : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - ax - t * dx, pz - az - t * dz); }
+function labelPoint(poly) {
+  let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; poly.forEach(([x, z]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); });
+  let best = [(x0 + x1) / 2, (z0 + z1) / 2], bd = -1; const N = 22;
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const x = x0 + (x1 - x0) * i / N, z = z0 + (z1 - z0) * j / N; if (!pointIn(poly, x, z)) continue; let d = 1e9; for (let k = 0; k < poly.length; k++) d = Math.min(d, segDist(x, z, poly[k], poly[(k + 1) % poly.length])); if (d > bd) { bd = d; best = [x, z]; } }
+  return best;
+}
+function boxAlong(p, q, y0, y1, t, out, hex) {
+  const dx = q[0] - p[0], dz = q[1] - p[1], L = Math.hypot(dx, dz); if (L < 0.05 || y1 <= y0) return;
+  const g = new THREE.BoxGeometry(L + t * 0.6, y1 - y0, t); g.rotateY(-Math.atan2(dz, dx)); g.translate((p[0] + q[0]) / 2, (y0 + y1) / 2, (p[1] + q[1]) / 2);
+  if (hex) { const c = new THREE.Color(hex), n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } g.setAttribute('color', new THREE.BufferAttribute(a, 3)); }
+  out.push(g);
+}
+const merged = (arr, mat) => { if (!arr.length) return null; const g = mergeGeometries(arr, false); arr.forEach(a => a.dispose()); return new THREE.Mesh(g, mat); };
+function textTex(text, { w = 1024, h = 128, bg = '#2b302e', fg = '#ffffff', size = 72, weight = 700, family = '"Archivo Narrow", "Arial Narrow", sans-serif' } = {}) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  g.fillStyle = bg; g.fillRect(0, 0, w, h); g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+  let s = size; do { g.font = `${weight} ${s}px ${family}`; s -= 2; } while (g.measureText(text).width > w * 0.9 && s > 12);
+  g.fillText(text, w / 2, h / 2);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+const ink = (hex) => { const c = new THREE.Color(hex); return (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) > 0.62 ? '#1c2321' : '#ffffff'; };
+
+/* ---------- floors ---------- */
+await document.fonts?.ready;
+const floorObjs = []; const pickables = []; const unitIndex = [];
+const floorY = (fi) => FL[fi].elev + (S.display === 'stack' && S.mode === 'overview' ? S.explode * GAP * (fi - 1) : 0);
+FL.forEach((F, fi) => {
+  const group = new THREE.Group(); scene.add(group);
+  const o = { F, fi, group, tints: [], labels: [], scaled: new THREE.Group(), unitG: new THREE.Group(), signs: new THREE.Group(), elements: new THREE.Group(), scheme: null };
+  group.add(o.scaled, o.signs, o.elements); o.scaled.add(o.unitG);
+  const shape = shapeOf(F.footprint); F.voids.forEach(v => shape.holes.push(pathOf(v)));
+  const sg = new THREE.ExtrudeGeometry(shape, { depth: SLAB - 0.02, bevelEnabled: false, curveSegments: 1 }); sg.rotateX(-Math.PI / 2); sg.translate(0, -SLAB, 0);
+  group.add(new THREE.Mesh(sg, M.slabSide));
+  const tg = new THREE.ShapeGeometry(shape, 1); tg.rotateX(-Math.PI / 2);
+  const pos = tg.attributes.position, uv = tg.attributes.uv;
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) - TX0) / (TX1 - TX0), 1 - (pos.getZ(i) - TZ0) / (TZ1 - TZ0));
+  o.slab = new THREE.Mesh(tg, planMaterial(textures[fi])); o.slab.userData = { kind: 'slab', fi }; group.add(o.slab);
+  F.units.forEach((u, ui) => {
+    u.area = Math.abs(polyArea(u.poly)); u.lp = labelPoint(u.poly);
+    const g = new THREE.ShapeGeometry(shapeOf(u.poly)); g.rotateX(-Math.PI / 2);
+    const t = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.3, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    t.position.y = 0.025; t.renderOrder = 2; t.userData = { kind: 'unit', fi, ui }; group.add(t); o.tints.push(t); pickables.push(t);
+    unitIndex.push({ fi, ui, u });
+    if (u.zone) return;
+    const sgn = polyArea(u.poly) > 0 ? 1 : -1; let best = null; u.frontage = 0;
+    u.poly.forEach((p, k) => { if (u.edges[k] !== 'front') return; const q = u.poly[(k + 1) % u.poly.length]; const L = Math.hypot(q[0] - p[0], q[1] - p[1]); u.frontage += L; if (!best || L > best.L) best = { p, q, L }; });
+    if (!best) u.poly.forEach((p, k) => { if (u.edges[k] === 'ext') return; const q = u.poly[(k + 1) % u.poly.length]; const L = Math.hypot(q[0] - p[0], q[1] - p[1]); if (!best || L > best.L) best = { p, q, L }; });
+    if (best && best.L > 1.2) {
+      const dx = best.q[0] - best.p[0], dz = best.q[1] - best.p[1], nx = dz / best.L * sgn, nz = -dx / best.L * sgn;
+      u.door = [(best.p[0] + best.q[0]) / 2 + nx * 1.6, (best.p[1] + best.q[1]) / 2 + nz * 1.6];
+      u.face = Math.atan2(nx, nz);
+      u.signAt = { x: (best.p[0] + best.q[0]) / 2 + nx * 0.13, z: (best.p[1] + best.q[1]) / 2 + nz * 0.13, ry: Math.atan2(nx, nz), w: Math.min(best.L * 0.86, 15) };
+    }
+  });
+  const bg = [];
+  (F.boh || []).forEach(b => { const s = shapeOf(b.o); (b.h || []).forEach(h => s.holes.push(pathOf(h))); const g = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false, curveSegments: 1 }); g.rotateX(-Math.PI / 2); bg.push(g); });
+  if (bg.length) { const bm = new THREE.Mesh(mergeGeometries(bg, false), M.boh); bm.userData = { kind: 'boh' }; o.scaled.add(bm); o.boh = bm; }
+  const fg = []; F.footprint.forEach((p, k) => boxAlong(p, F.footprint[(k + 1) % F.footprint.length], 0, 1, 0.3, fg));
+  const fm = merged(fg, M.facade); if (fm) o.scaled.add(fm);
+  if (F.columns.length) {
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), M.column, F.columns.length); const mt = new THREE.Matrix4();
+    F.columns.forEach(([x, z, s], i) => { mt.compose(new THREE.Vector3(x, 0.5, z), new THREE.Quaternion(), new THREE.Vector3(s, 1, s)); im.setMatrixAt(i, mt); });
+    o.scaled.add(im);
+  }
+  const pg = [], cg = [];
+  F.voids.forEach(v => v.forEach((p, k) => { const q = v[(k + 1) % v.length]; boxAlong(p, q, 0, 1.05, 0.16, pg); boxAlong(p, q, 1.05, 1.12, 0.22, cg); }));
+  const pm = merged(pg, M.parapet), cm = merged(cg, M.cap); if (pm) group.add(pm); if (cm) group.add(cm);
+  const tagEl = document.createElement('div'); tagEl.className = 'ftag'; tagEl.textContent = `${F.short}${DOT}${F.name}`; tagEl.addEventListener('click', () => isolate(fi));
+  o.tag = new CSS2DObject(tagEl); o.tag.position.set(-80, 0.5, 66); group.add(o.tag);
+  floorObjs.push(o);
+});
+
+/* walls, shopfront fascias and signs follow the colour scheme; rebuilt when it changes */
+function buildUnits(o, force) {
+  const sc = scheme(); if (!force && o.scheme === sc) return; o.scheme = sc;
+  o.unitG.children.slice().forEach(c => { o.unitG.remove(c); c.geometry.dispose(); });
+  o.signs.children.slice().forEach(s => { o.signs.remove(s); s.material.map?.dispose(); s.material.dispose(); s.geometry.dispose(); });
+  const wg = [], fg = [];
+  o.F.units.forEach((u, ui) => {
+    if (u.zone) return;
+    const hex = unitHex(o.fi, ui, sc);
+    const wallHex = sc === 'shop' ? mixHex(hex, '#ffffff', 0.45) : css('--scene-wall');
+    const fasHex = sc === 'shop' ? hex : css('--scene-fascia');
+    u.poly.forEach((p, k) => { const q = u.poly[(k + 1) % u.poly.length], e = u.edges[k]; if (e === 'front') boxAlong(p, q, 0.84, 1, 0.2, fg, fasHex); else if (e !== 'ext') boxAlong(p, q, 0, 1, 0.18, wg, wallHex); });
+    if (u.signAt) {
+      const v = unitView(o.fi, ui), w = u.signAt.w, h = Math.min(0.62, w / 4);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: textTex((v.brand || 'AVAILABLE \u00b7 ' + u.id).toUpperCase(), { bg: fasHex, fg: ink(fasHex) }), toneMapped: false }));
+      m.position.set(u.signAt.x, 0, u.signAt.z); m.rotation.y = u.signAt.ry; o.signs.add(m);
+    }
+  });
+  const wm = merged(wg, M.wall), fm = merged(fg, M.fascia); if (wm) o.unitG.add(wm); if (fm) o.unitG.add(fm);
+  applyWallHeight();
+}
+function buildLabels() {
+  floorObjs.forEach(o => {
+    o.labels.forEach(l => { l.parent?.remove(l); l.element.remove(); }); o.labels = [];
+    o.F.units.forEach((u, ui) => {
+      const el = document.createElement('div'); el.className = 'ul';
+      el.addEventListener('click', (ev) => { ev.stopPropagation(); if (S.mode === 'walk') return; selectUnit(o.fi, ui, false); });
+      el.addEventListener('dblclick', (ev) => { ev.stopPropagation(); selectUnit(o.fi, ui, true); });
+      el.addEventListener('pointerenter', () => hoverUnit(o.fi, ui)); el.addEventListener('pointerleave', () => hoverUnit(null));
+      const obj = new CSS2DObject(el); obj.position.set(u.lp[0], 0, u.lp[1]); obj.userData = { fi: o.fi, ui, prio: u.area };
+      o.group.add(obj); o.labels.push(obj);
+    });
+  });
+  fillLabels();
+}
+function fillLabels() {
+  const sc = scheme();
+  floorObjs.forEach(o => o.labels.forEach(l => {
+    const { fi, ui } = l.userData, u = FL[fi].units[ui], v = unitView(fi, ui);
+    const area = u.sqft ? `${fmt(u.sqft)} sqft` : `\u2248${fmt(u.area * SQFT)} sqft`;
+    const sub = S.labelMode === 'unit' ? u.id : S.labelMode === 'full' ? `${u.id}${DOT}${area}${DOT}${STATUS[v.status]}` : '';
+    l.element.innerHTML = `<i></i><b>${esc(v.brand || 'Available')}</b>${sub ? `<span>${esc(sub)}</span>` : ''}`;
+    l.element.style.setProperty('--lc', unitHex(fi, ui, sc)); l.element.classList.toggle('nodot', sc === 'plain'); l.userData.w = 0;
+  }));
+}
+
+/* ---------- vertical circulation ---------- */
+const vert = new THREE.Group(); scene.add(vert);
+const stepTex = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#5b6160'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#aab0ae'; for (let i = 0; i < 64; i += 8) g.fillRect(0, i, 64, 2); g.fillStyle = '#e2bd45'; g.fillRect(0, 0, 4, 64); g.fillRect(60, 0, 4, 64); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; })();
+const escMovers = [], lifts = [], escLinks = [];
+function buildVertical() {
+  vert.children.slice().forEach(c => { vert.remove(c); c.traverse(n => { n.geometry?.dispose(); if (n.material?.map && n.material.map !== stepTex) n.material.map.dispose(); }); });
+  escMovers.length = 0; lifts.length = 0; escLinks.length = 0;
+  D.escalators.forEach((E) => {
+    const [x0, z0, x1, z1] = E.rect, ax = E.axis === 'x';
+    const a0 = ax ? x0 : z0, a1 = ax ? x1 : z1, c0 = ax ? z0 : x0, c1 = ax ? z1 : x1, runW = (c1 - c0) / 2 - 0.15;
+    const ids = E.floors.map(id => fIndex[id]);
+    for (let k = 0; k < ids.length - 1; k++) {
+      const fa = ids[k], fb = ids[k + 1], ya = floorY(fa), yb = floorY(fb);
+      const bot = k % 2 === 0 ? a1 : a0, top = k % 2 === 0 ? a0 : a1, s = Math.sign(top - bot), land = 1.6;
+      [c0 + 0.1 + runW / 2, c1 - 0.1 - runW / 2].forEach((cc, j) => {
+        const P = (a, y) => ax ? new THREE.Vector3(a, y, cc) : new THREE.Vector3(cc, y, a);
+        const pa = P(bot + s * land, ya), pb = P(top - s * land, yb), len = pa.distanceTo(pb);
+        const g = new THREE.Group(); g.position.copy(pa.clone().add(pb).multiplyScalar(0.5));
+        const look = new THREE.Object3D(); look.position.copy(g.position); look.lookAt(pb); g.quaternion.copy(look.quaternion);
+        const truss = new THREE.Mesh(new THREE.BoxGeometry(runW, 0.7, len), M.steel); truss.position.y = -0.4; g.add(truss);
+        const t = stepTex.clone(); t.needsUpdate = true; t.repeat.set(1, len / 0.4);
+        const steps = new THREE.Mesh(new THREE.PlaneGeometry(runW * 0.86, len), new THREE.MeshStandardMaterial({ map: t, roughness: 0.6 })); steps.rotation.x = -Math.PI / 2; steps.position.y = -0.04; g.add(steps);
+        escMovers.push({ t, dir: j === 0 ? 1 : -1 });
+        [-1, 1].forEach(sd => { const b = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.95, len), M.parapet); b.position.set(sd * runW / 2, 0.45, 0); g.add(b); const h = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, len), M.dark); h.position.set(sd * runW / 2, 0.97, 0); g.add(h); });
+        vert.add(g);
+        [[bot, ya], [top, yb]].forEach(([aa, yy], m) => { const pl = new THREE.Mesh(new THREE.BoxGeometry(ax ? land : runW, 0.08, ax ? runW : land), M.steel); pl.position.copy(P(aa + (m ? -s : s) * land / 2, yy + 0.04)); vert.add(pl); });
+      });
+      const L = (a) => ax ? [a, (c0 + c1) / 2] : [(c0 + c1) / 2, a];
+      escLinks.push({ E, a: fa, b: fb, landA: L(bot - s * 1.2), landB: L(top + s * 1.2), bottom: L(bot), top: L(top) });
+    }
+  });
+  D.lifts.forEach((Lf) => {
+    const [x0, z0, x1, z1] = Lf.rect, ids = Lf.floors.map(id => fIndex[id]);
+    const yb = floorY(ids[0]), yt = floorY(ids[ids.length - 1]) + FLOOR_H - SLAB, cw = (x1 - x0) / Lf.cars;
+    for (let c = 0; c < Lf.cars; c++) {
+      const cx = x0 + cw * (c + 0.5), cz = (z0 + z1) / 2;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => { const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, yt - yb, 0.1), M.dark); p.position.set(cx + sx * (cw / 2 - 0.12), (yb + yt) / 2, cz + sz * ((z1 - z0) / 2 - 0.1)); vert.add(p); });
+      const car = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(cw - 0.45, 2.5, z1 - z0 - 0.45), M.liftCar); body.position.y = 1.25; car.add(body);
+      car.position.set(cx, floorY(ids[c % ids.length]), cz); vert.add(car);
+      lifts.push({ car, ids, target: c % ids.length, wait: 2 + c * 2.5 });
+    }
+  });
+}
+const pins = [];
+function buildPins() {
+  D.entrances.forEach(e => { const el = document.createElement('div'); el.className = 'pin'; el.textContent = 'Entrance'; el.title = e.name; el.addEventListener('click', () => flyTo(e.pos[0], fIndex[e.floor], e.pos[1], 40)); const o = new CSS2DObject(el); o.position.set(e.pos[0], 2.6, e.pos[1]); floorObjs[fIndex[e.floor]].group.add(o); o.userData.fi = fIndex[e.floor]; pins.push(o); });
+  D.escalators.forEach(E => E.floors.forEach(id => { const fi = fIndex[id], [x0, z0, x1, z1] = E.rect; const el = document.createElement('div'); el.className = 'pin esc'; el.textContent = 'Escalators'; const o = new CSS2DObject(el); o.position.set((x0 + x1) / 2, 3.2, (z0 + z1) / 2); floorObjs[fi].group.add(o); o.userData = { fi, minor: true }; pins.push(o); }));
+  D.lifts.forEach(Lf => Lf.floors.forEach(id => { const fi = fIndex[id], [x0, , x1, z1] = Lf.rect; const el = document.createElement('div'); el.className = 'pin esc'; el.textContent = 'Lifts'; const o = new CSS2DObject(el); o.position.set((x0 + x1) / 2, 3.2, z1 + 1); floorObjs[fi].group.add(o); o.userData = { fi, minor: true }; pins.push(o); }));
+}
+
+/* ---------- layout / visibility ---------- */
+const floorVisible = (fi) => S.mode === 'walk' || S.display === 'stack' ? (!S.route || S.mode === 'walk' || S.route.pts.some(p => p.fi === fi)) : fi === S.focus;
+function applyLayout() { floorObjs.forEach((o, fi) => { o.group.position.y = floorY(fi); }); buildVertical(); applyVisibility(); drawRoute(); drawMeasures(); }
+function applyVisibility() {
+  const walk = S.mode === 'walk';
+  floorObjs.forEach((o, fi) => {
+    const vis = floorVisible(fi); o.group.visible = vis;
+    const showL = vis && S.labelMode !== 'off' && (walk ? fi === S.focus : (S.display === 'single' || S.mode === 'plan'));
+    o.labels.forEach(l => { l.visible = showL; });
+    o.signs.visible = S.signs && (walk || S.wallH > 1.6);
+    o.tag.visible = !walk && S.display === 'stack' && S.mode === 'overview' && vis;
+    o.elements.children.forEach(ch => { const L = ch.userData.label; if (L) L.visible = vis && (ch.userData.always || (S.elLabels && !walk)); });
+  });
+  pins.forEach(p => { p.visible = !walk && floorVisible(p.userData.fi) && (S.display === 'single' || S.mode === 'plan') && (!p.userData.minor || S.labelMode !== 'off'); });
+  vert.visible = walk || (S.display === 'stack' && S.mode === 'overview' && S.explode < 0.05 && !S.route);
+  $('#legend').hidden = S.colorBy !== 'status' || walk;
+  U.plan.value = S.plan === 0 ? 0 : walk ? 0.32 : 0.8; U.cad.value = S.plan === 2 && !walk ? 1 : 0;
+}
+function applyWallHeight() {
+  const h = S.mode === 'walk' ? Math.max(S.wallH, 3.6) : S.wallH;
+  floorObjs.forEach(o => { o.scaled.scale.y = h; o.signs.children.forEach(s => { s.position.y = Math.max(0.35, h - 0.36); }); o.labels.forEach(l => { l.position.y = S.mode === 'walk' ? h + 0.9 : h + 0.4; }); });
+}
+let hovered = null;
+function applyColors() {
+  const sc = scheme(), walk = S.mode === 'walk';
+  floorObjs.forEach(o => o.F.units.forEach((u, ui) => {
+    const v = unitView(o.fi, ui), t = o.tints[ui], on = S.filter.has(v.status);
+    const sel = S.sel?.kind === 'unit' && S.sel.fi === o.fi && S.sel.ui === ui, hov = hovered?.fi === o.fi && hovered?.ui === ui;
+    t.material.color.set(sc === 'plain' ? '#9aa3a0' : unitHex(o.fi, ui, sc));
+    t.material.opacity = u.zone ? 0.12 : walk ? (sel ? 0.42 : 0.26) : !on ? 0.05 : sel ? 0.6 : hov ? 0.48 : sc === 'plain' ? 0.1 : 0.32;
+    const l = o.labels[ui]; if (l) { l.element.classList.toggle('dim', !on); l.element.classList.toggle('sel', sel); }
+  }));
+}
+
+/* ---------- camera ---------- */
+let tween = null;
+function animateCam(toPos, toTarget, ms = 1000, cam = persp, ctl = controls) {
+  const fp = cam.position.clone(), ft = ctl.target.clone(), t0 = performance.now(), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  tween = { step(now) { let k = reduce ? 1 : Math.min(1, (now - t0) / ms); k = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; cam.position.lerpVectors(fp, toPos, k); ctl.target.lerpVectors(ft, toTarget, k); if (k >= 1) tween = null; } };
+}
+function animateOrtho(toTarget, toZoom, ms = 450) {
+  const ft = ocontrols.target.clone(), fz = ortho.zoom, t0 = performance.now();
+  tween = { step(now) { let k = Math.min(1, (now - t0) / ms); k = 1 - Math.pow(1 - k, 3); const t = ft.clone().lerp(toTarget, k); ocontrols.target.copy(t); ortho.position.set(t.x, t.y + 300, t.z + 0.001); ortho.zoom = fz + (toZoom - fz) * k; ortho.updateProjectionMatrix(); if (k >= 1) tween = null; } };
+}
+const aspectK = () => Math.pow(Math.max(1, 1.1 / (innerWidth / innerHeight)), 0.8);
+function overviewPose() {
+  if (S.display === 'stack') { const y = (floorY(0) + floorY(FL.length - 1)) / 2, d = (215 + S.explode * 60) * aspectK(); return { pos: new THREE.Vector3(0, y, 6).addScaledVector(new THREE.Vector3(0.42, 0.5, 0.76).normalize(), d), target: new THREE.Vector3(0, y, 6) }; }
+  const y = floorY(S.focus), d = 175 * aspectK(); return { pos: new THREE.Vector3(0, y, 4).addScaledVector(new THREE.Vector3(0.3, 0.8, 0.52).normalize(), d), target: new THREE.Vector3(0, y, 4) };
+}
+function fitView() {
+  if (S.mode === 'plan') { animateOrtho(new THREE.Vector3(0, floorY(S.focus), 0), 1); return; }
+  if (S.mode === 'overview') { const p = overviewPose(); animateCam(p.pos, p.target); }
+}
+function flyTo(x, fi, z, dist = 50) {
+  if (S.mode === 'walk') { teleportWalk(fi, x, z); return; }
+  if (fi !== S.focus || S.display === 'stack') isolate(fi, false);
+  const y = floorY(fi);
+  if (S.mode === 'plan') { animateOrtho(new THREE.Vector3(x, y, z), Math.max(ortho.zoom, 3)); return; }
+  const cur = persp.position.clone().sub(controls.target); cur.y = 0; if (cur.length() < 1) cur.set(0.5, 0, 0.85); cur.normalize();
+  animateCam(new THREE.Vector3(x, y, z).addScaledVector(cur, dist * 0.7).add(new THREE.Vector3(0, dist * 0.85, 0)), new THREE.Vector3(x, y, z));
+}
+function fitOrtho() { const a = innerWidth / innerHeight, span = 182, h = a > 1 ? span : span / a, w = h * a; Object.assign(ortho, { left: -w / 2, right: w / 2, top: h / 2, bottom: -h / 2 }); ortho.updateProjectionMatrix(); }
+
+/* ---------- modes & floors ---------- */
+function setMode(m) {
+  if (m === S.mode) return;
+  const prev = S.mode; S.mode = m;
+  if (prev === 'walk') { exitLock(); walk.auto = null; persp.fov = 42; persp.updateProjectionMatrix(); stopGrab(); }
+  $$('#modes .seg button').forEach(b => b.setAttribute('aria-pressed', String(b.id === 'm-' + m)));
+  document.body.classList.toggle('walking', m === 'walk');
+  controls.enabled = m === 'overview'; ocontrols.enabled = m === 'plan';
+  if (m === 'plan') { camera = ortho; S.display = 'single'; const y = floorY(S.focus); ocontrols.target.set(0, y, 0); ortho.position.set(0, y + 300, 0.001); ortho.up.set(0, 0, -1); ortho.lookAt(0, y, 0); ortho.zoom = 1; fitOrtho(); }
+  else if (m === 'overview') { camera = persp; persp.up.set(0, 1, 0); const p = overviewPose(); if (prev === 'walk') { persp.position.copy(p.pos); controls.target.copy(p.target); } else animateCam(p.pos, p.target); }
+  else { camera = persp; persp.fov = 70; persp.updateProjectionMatrix(); if (S.placing) stopPlacing(); if (S.measuring) { S.measuring = false; S.measurePts = []; } }
+  floorObjs.forEach(o => buildUnits(o)); fillLabels(); applyLayout(); applyColors(); applyWallHeight();
+  if (m === 'walk') { walk.noLock = false; walk.fails = 0; startWalk(); }
+  renderFloorbar(); renderPanel(); renderHint();
+}
+function isolate(fi, moveCam = true) {
+  S.focus = Math.max(0, Math.min(FL.length - 1, fi));
+  if (S.mode === 'walk') { teleportWalk(S.focus, walk.pos.x, walk.pos.z); }
+  else if (S.mode === 'plan') { const y = floorY(S.focus); ocontrols.target.y = y; ortho.position.y = y + 300; }
+  else { const wasStack = S.display === 'stack'; S.display = 'single'; if (wasStack) applyLayout(); if (moveCam) { const p = overviewPose(); animateCam(p.pos, p.target); } }
+  if (ghost) { ghost.parent?.remove(ghost); floorObjs[S.mode === 'walk' ? walk.fi : S.focus].elements.add(ghost); }
+  applyVisibility(); renderFloorbar(); drawRoute(); drawMeasures(); renderResults(); renderHint(); if (S.panel === 'place') renderPanel();
+}
+function showAll() {
+  if (S.mode === 'plan' || S.mode === 'walk') setMode('overview');
+  S.display = 'stack'; if (S.explode < 0.2) S.explode = 0.7; applyLayout(); const p = overviewPose(); animateCam(p.pos, p.target); renderFloorbar(); renderHint();
+}
+function renderFloorbar() {
+  const all = S.display === 'stack' && S.mode === 'overview';
+  $('#floorbar').innerHTML = `<button class="fl all" aria-pressed="${all}" title="Show all floors" data-f="all">ALL</button>` +
+    [...FL.keys()].reverse().map(fi => `<button class="fl" data-f="${fi}" aria-pressed="${!all && fi === S.focus}">${FL[fi].short}<span class="tipx">${FL[fi].name}</span></button>`).join('');
+}
+$('#floorbar').addEventListener('click', (e) => { const b = e.target.closest('.fl'); if (!b) return; if (b.dataset.f === 'all') showAll(); else isolate(+b.dataset.f); });
+
+/* ---------- picking ---------- */
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function setRay(ev) {
+  if (S.mode === 'walk' && locked()) ndc.set(0, 0);
+  else { const r = renderer.domElement.getBoundingClientRect(); ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1); }
+  ray.setFromCamera(ndc, camera);
+}
+const visibleTints = () => pickables.filter(m => floorObjs[m.userData.fi].group.visible);
+function pickUnit() {
+  const hits = ray.intersectObjects(visibleTints(), false);
+  if (S.mode === 'walk' && hits.length) { const blockers = [floorObjs[walk.fi].boh, ...floorObjs[walk.fi].unitG.children].filter(Boolean); const b = ray.intersectObjects(blockers, false); if (b.length && b[0].distance < hits[0].distance - 0.3) return null; }
+  return hits.length ? hits[0].object.userData : null;
+}
+function pickElement() { const objs = []; floorObjs.forEach(o => { if (o.group.visible) objs.push(...o.elements.children.filter(c => c !== ghost)); }); for (const h of ray.intersectObjects(objs, true)) { let n = h.object; while (n && !n.userData.elId) n = n.parent; if (n) return n.userData.elId; } return null; }
+function floorPoint(fi = S.focus) { const p = new THREE.Vector3(); return ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -floorY(fi)), p) ? p : null; }
+function pickFloorIndex() { const slabs = floorObjs.filter(o => o.group.visible).map(o => o.slab); const h = ray.intersectObjects(slabs, false); return h.length ? h[0].object.userData.fi : null; }
+function hoverUnit(fi, ui) { const p = hovered; hovered = fi == null ? null : { fi, ui }; if (p?.fi !== hovered?.fi || p?.ui !== hovered?.ui) applyColors(); }
+const tip = $('#tip');
+const showTip = (ev, text) => { tip.style.display = 'block'; tip.textContent = text; tip.style.left = ev.clientX + 'px'; tip.style.top = ev.clientY + 'px'; };
+let down = null, dragEl = null;
+const cvs = renderer.domElement;
+cvs.addEventListener('pointerdown', (ev) => {
+  down = { x: ev.clientX, y: ev.clientY, b: ev.button };
+  if (S.mode === 'walk') return;
+  setRay(ev);
+  if (!S.placing && !S.measuring && S.canWrite && ev.button === 0) {
+    const id = pickElement();
+    if (id && S.sel?.kind === 'el' && S.sel.id === id) { dragEl = { id, fi: fIndex[S.elements[id].f] }; controls.enabled = ocontrols.enabled = false; cvs.setPointerCapture(ev.pointerId); }
+  }
+});
+cvs.addEventListener('pointermove', (ev) => {
+  if (S.mode === 'walk') return;
+  setRay(ev);
+  if (dragEl) { const p = floorPoint(dragEl.fi); if (p) { const e = S.elements[dragEl.id]; e.x = +p.x.toFixed(2); e.z = +p.z.toFixed(2); placeElementObj(dragEl.id); } return; }
+  if (S.placing) { moveGhost(); return; }
+  if (S.measuring && S.measurePts.length === 1) { const p = floorPoint(); if (p) drawMeasurePreview(p, ev); return; }
+  if (ev.pointerType === 'touch' || ev.buttons) { tip.style.display = 'none'; return; }
+  const elId = pickElement();
+  if (elId) { const e = S.elements[elId]; showTip(ev, e.label || CAT[e.type]?.name); hoverUnit(null); cvs.style.cursor = 'pointer'; return; }
+  const h = pickUnit();
+  if (h) { hoverUnit(h.fi, h.ui); showTip(ev, `${brandOf(h.fi, h.ui)}${DOT}${FL[h.fi].units[h.ui].id}`); cvs.style.cursor = 'pointer'; }
+  else { hoverUnit(null); tip.style.display = 'none'; cvs.style.cursor = ''; }
+});
+cvs.addEventListener('pointerleave', () => { tip.style.display = 'none'; hoverUnit(null); });
+cvs.addEventListener('pointerup', (ev) => {
+  if (S.mode === 'walk') return;
+  if (dragEl) { const id = dragEl.id; dragEl = null; controls.enabled = S.mode === 'overview'; ocontrols.enabled = S.mode === 'plan'; saveSoon('elements', id, () => strip(S.elements[id]), 30); renderPanel(); return; }
+  if (!down || down.b !== 0 || Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 5) return;
+  setRay(ev);
+  if (S.placing) { dropElement(ev.shiftKey); return; }
+  if (S.measuring) { const p = floorPoint(); if (p) addMeasurePoint(p); return; }
+  const elId = pickElement(); if (elId) { selectElement(elId); return; }
+  const h = pickUnit();
+  if (h) selectUnit(h.fi, h.ui, false); else if (S.sel) clearSel();
+});
+cvs.addEventListener('dblclick', (ev) => {
+  if (S.mode === 'walk' || S.placing || S.measuring) return;
+  setRay(ev);
+  if (S.mode === 'plan') { const p = floorPoint(); if (!p) return; const z = Math.min(60, ortho.zoom * 2.2), nt = p.clone().add(ocontrols.target.clone().sub(p).multiplyScalar(ortho.zoom / z)); animateOrtho(nt, z); return; }
+  const fi = pickFloorIndex(); if (fi == null) return;
+  if (S.display === 'stack') { S.focus = fi; S.display = 'single'; applyLayout(); renderFloorbar(); }
+  setRay(ev); const p = floorPoint(fi); if (!p) return;
+  const dir = persp.position.clone().sub(controls.target).normalize(), dist = Math.max(18, persp.position.distanceTo(controls.target) * 0.45);
+  animateCam(p.clone().addScaledVector(dir, dist), p, 700); renderHint();
+});
+// zooming in on the stacked view isolates the floor under the pointer
+cvs.addEventListener('wheel', (ev) => {
+  if (S.mode !== 'overview' || S.display !== 'stack' || ev.deltaY >= 0) return;
+  if (persp.position.distanceTo(controls.target) > 165 * aspectK()) return;
+  setRay(ev); const fi = pickFloorIndex(); if (fi == null) return;
+  const p = floorPoint(fi), off = persp.position.clone().sub(controls.target);
+  S.focus = fi; S.display = 'single'; applyLayout(); renderFloorbar(); renderHint();
+  if (p) { const t = new THREE.Vector3(p.x, floorY(fi), p.z); controls.target.copy(t); persp.position.copy(t.clone().add(off)); }
+  toast(`Showing ${FL[fi].name} only. Press ALL to see every floor.`);
+}, { passive: true });
+$('#z-in').onclick = () => zoomBy(0.62); $('#z-out').onclick = () => zoomBy(1.6); $('#z-fit').onclick = fitView;
+function zoomBy(k) {
+  if (S.mode === 'plan') { animateOrtho(ocontrols.target.clone(), Math.min(60, Math.max(0.5, ortho.zoom / k))); return; }
+  const off = persp.position.clone().sub(controls.target).multiplyScalar(k); animateCam(controls.target.clone().add(off), controls.target.clone(), 400);
+}
+
+/* ---------- selection ---------- */
+let selLine = null;
+function highlightSel() {
+  if (selLine) { selLine.parent?.remove(selLine); selLine.children.forEach(c => c.geometry.dispose()); selLine = null; }
+  floorObjs.forEach(o => o.elements.children.forEach(c => { if (c.userData.ring) c.userData.ring.visible = S.sel?.kind === 'el' && S.sel.id === c.userData.elId; }));
+  if (S.sel?.kind !== 'unit') return;
+  const u = FL[S.sel.fi].units[S.sel.ui], m = new THREE.LineBasicMaterial({ color: css('--accent'), depthTest: false, transparent: true });
+  const ring = (y) => { const p = u.poly.map(([x, z]) => new THREE.Vector3(x, y, z)); p.push(p[0].clone()); return new THREE.Line(new THREE.BufferGeometry().setFromPoints(p), m); };
+  selLine = new THREE.Group(); selLine.add(ring(0.08)); if (S.wallH > 0.5 && S.mode !== 'walk') selLine.add(ring(S.wallH + 0.02)); selLine.renderOrder = 9;
+  floorObjs[S.sel.fi].group.add(selLine);
+}
+function selectUnit(fi, ui, fly) {
+  S.sel = { kind: 'unit', fi, ui }; S.editing = false; openPanel('details');
+  if (fly && S.mode !== 'walk' && (fi !== S.focus || S.display === 'stack')) isolate(fi, false);
+  applyColors(); highlightSel();
+  const u = FL[fi].units[ui]; if (fly) flyTo(u.lp[0], fi, u.lp[1], Math.max(36, Math.sqrt(u.area) * 2.3));
+}
+function selectElement(id) { S.sel = { kind: 'el', id }; openPanel('details'); applyColors(); highlightSel(); }
+function clearSel() { S.sel = null; S.editing = false; if (S.panel === 'details') closePanel(); applyColors(); highlightSel(); }
+
+/* ---------- placeable items ---------- */
+const ICONS = {
+  standee: '<rect x="8" y="3" width="8" height="15" rx="1"/><path d="M6 21h12M12 18v3"/>', kiosk: '<path d="M4 10h16v9H4zM3 10l2-5h14l2 5"/><path d="M8 14h8"/>',
+  decor: '<circle cx="8" cy="15" r="4"/><circle cx="16" cy="14" r="3"/><circle cx="13" cy="7" r="3"/>', tree: '<path d="M12 3 6 12h3l-4 6h14l-4-6h3z"/><path d="M12 18v3"/>',
+  planter: '<path d="M7 13h10l-1.5 8h-7z"/><path d="M12 13c0-5-3-7-6-7 0 4 3 7 6 7Zm0 0c0-5 3-7 6-7 0 4-3 7-6 7Z"/>', screen: '<rect x="7" y="2" width="10" height="17" rx="1"/><path d="M10 22h4M12 19v3"/>',
+  seating: '<path d="M4 12h16v4H4zM6 16v3M18 16v3M5 12V9h14v3"/>', stage: '<path d="M3 16h18v4H3zM5 16V6h14v10"/><path d="M9 10h6"/>',
+  barricade: '<path d="M5 6v14M12 6v14M19 6v14M3 20h4M10 20h4M17 20h4M5 9h14"/>', pylon: '<rect x="8" y="2" width="8" height="18" rx="1"/><path d="M10 7h4M10 11h4M10 15h3M6 22h12"/>',
+  photo: '<path d="M4 21V10a8 8 0 0 1 16 0v11"/><path d="M8 21v-9a4 4 0 0 1 8 0v9"/>', hanging: '<path d="M4 3h16M8 3v4M16 3v4"/><rect x="7" y="7" width="10" height="13" rx="1"/>',
+  desk: '<path d="M3 12c3-3 15-3 18 0v6H3z"/><path d="M8 18v3M16 18v3"/>', zone: '<rect x="3" y="5" width="18" height="14" rx="1" stroke-dasharray="3 2"/>',
+  note: '<path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11Z"/><circle cx="12" cy="10" r="2"/>',
+};
+const CAT = {
+  standee: { name: 'Standee', color: '#c8102e', w: 0.85, d: 0.45, h: 2.0 }, kiosk: { name: 'Kiosk / RMU', color: '#2b6f6a', w: 2.4, d: 1.4, h: 2.6 },
+  decor: { name: 'Decor cluster', color: '#d4a017', w: 3, d: 3, h: 2.4 }, tree: { name: 'Feature tree', color: '#2f7d4f', w: 3.2, d: 3.2, h: 7 },
+  planter: { name: 'Planter', color: '#3d8c55', w: 1.2, d: 1.2, h: 1.7 }, screen: { name: 'LED totem', color: '#1d2a3a', w: 0.9, d: 0.45, h: 2.4 },
+  seating: { name: 'Seating pod', color: '#8a6b4f', w: 3.2, d: 3.2, h: 0.9 }, stage: { name: 'Event stage', color: '#3b3f8f', w: 6, d: 4, h: 3.6 },
+  barricade: { name: 'Queue barrier', color: '#c8102e', w: 4, d: 0.4, h: 1.0 }, pylon: { name: 'Wayfinding pylon', color: '#1f5f5b', w: 0.7, d: 0.35, h: 2.6 },
+  photo: { name: 'Photo-op arch', color: '#e06c9f', w: 3.2, d: 1.2, h: 3.0 }, hanging: { name: 'Hanging banner', color: '#c8102e', w: 1.6, d: 0.06, h: 2.2 },
+  desk: { name: 'Help desk', color: '#e9e2d6', w: 3, d: 1.5, h: 1.1 }, zone: { name: 'Activation zone', color: '#4a8fd4', w: 8, d: 6, h: 0.02 },
+  note: { name: 'Note pin', color: '#f2c14e', w: 0.6, d: 0.6, h: 2.2 },
+};
+const SWATCHES = ['#c8102e', '#e3782b', '#d4a017', '#2f7d4f', '#1f5f5b', '#2b6f9e', '#3b3f8f', '#7a3e9d', '#e06c9f', '#1d2a3a', '#8a6b4f', '#e9e2d6'];
+const std = (c, o = {}) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, metalness: 0.05, ...o });
+const face = (tex) => new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
+function buildElement(e) {
+  const c = CAT[e.type] || CAT.note, col = e.color || c.color, g = new THREE.Group(), label = e.label || c.name;
+  const W = e.type === 'zone' ? (e.w || c.w) : c.w, Dd = e.type === 'zone' ? (e.d || c.d) : c.d;
+  const add = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); g.add(m); return m; };
+  switch (e.type) {
+    case 'standee': { add(new THREE.BoxGeometry(0.9, 0.08, 0.3), M.steel, 0, 0.04); const t = textTex(label, { w: 512, h: 1200, bg: col, size: 92 }); add(new THREE.BoxGeometry(0.85, 2.0, 0.03), [std(col), std(col), std(col), std(col), face(t), face(t)], 0, 1.08); break; }
+    case 'kiosk': { add(new THREE.BoxGeometry(2.4, 1.0, 1.4), std(col), 0, 0.5); add(new THREE.BoxGeometry(2.5, 0.06, 1.5), std('#f4f1ea'), 0, 1.03); [-1.1, 1.1].forEach(x => add(new THREE.CylinderGeometry(0.04, 0.04, 1.4), M.steel, x, 1.75)); add(new THREE.BoxGeometry(2.6, 0.35, 1.6), std(col), 0, 2.5); add(new THREE.PlaneGeometry(2.4, 0.3), face(textTex(label, { bg: col })), 0, 2.5, 0.81); break; }
+    case 'decor': { const ms = [std(col, { metalness: 0.4, roughness: 0.3 }), std('#f4f1ea'), std('#b23a48', { metalness: 0.3 })]; [[0, 0.9, 0, 0.9, 0], [1, 0.5, 0.9, 0.5, 1], [-0.9, 0.6, 0.6, 0.6, 2], [0.5, 0.4, -1, 0.4, 1], [-0.6, 1.9, -0.3, 0.45, 0]].forEach(([x, y, z, r, m]) => add(new THREE.SphereGeometry(r, 28, 18), ms[m], x, y, z)); add(new THREE.BoxGeometry(0.8, 0.8, 0.8), ms[2], 1.0, 0.4, -0.6).rotation.y = 0.5; add(new THREE.CylinderGeometry(1.6, 1.6, 0.12, 40), std('#f4f1ea'), 0, 0.06); break; }
+    case 'tree': { const m = std(col, { roughness: 0.8 }); [[1.6, 2.4, 1.6], [1.25, 2.1, 3.2], [0.85, 1.8, 4.6], [0.45, 1.4, 5.8]].forEach(([r, h, y]) => add(new THREE.ConeGeometry(r, h, 24), m, 0, y)); add(new THREE.CylinderGeometry(0.2, 0.25, 0.8), std('#6b4a2f'), 0, 0.4); add(new THREE.OctahedronGeometry(0.3), std('#f2c14e', { emissive: '#f2c14e', emissiveIntensity: 0.6 }), 0, 6.75); for (let i = 0; i < 26; i++) { const a = i * 2.4, y = 1.4 + (i / 26) * 4.6, r = 1.55 * (1 - (y - 1.2) / 5.8) + 0.1; add(new THREE.SphereGeometry(0.11, 10, 8), std(i % 3 ? '#d6403b' : '#f2c14e', { metalness: 0.5, roughness: 0.3 }), Math.cos(a) * r, y, Math.sin(a) * r); } break; }
+    case 'planter': { add(new THREE.CylinderGeometry(0.55, 0.42, 0.75, 28), std('#d9d3c7'), 0, 0.375); const lm = std(col, { roughness: 0.9 }); [[0, 1.15, 0, 0.5], [0.25, 1.4, 0.1, 0.35], [-0.2, 1.35, -0.15, 0.38], [0.05, 1.6, -0.05, 0.3]].forEach(([x, y, z, r]) => add(new THREE.IcosahedronGeometry(r, 1), lm, x, y, z)); break; }
+    case 'screen': { add(new THREE.BoxGeometry(0.9, 0.1, 0.45), M.dark, 0, 0.05); add(new THREE.BoxGeometry(0.9, 2.3, 0.18), std('#1b1f22'), 0, 1.25); const t = textTex(label, { w: 400, h: 1000, bg: col, size: 84 }); add(new THREE.PlaneGeometry(0.78, 1.95), face(t), 0, 1.3, 0.095); add(new THREE.PlaneGeometry(0.78, 1.95), face(t), 0, 1.3, -0.095).rotation.y = Math.PI; break; }
+    case 'seating': { const r = add(new THREE.TorusGeometry(1.25, 0.32, 14, 40), std(col), 0, 0.45); r.rotation.x = Math.PI / 2; r.scale.z = 1.4; add(new THREE.CylinderGeometry(0.7, 0.7, 0.9, 28), std('#3d8c55', { roughness: 0.9 }), 0, 0.45); break; }
+    case 'stage': { add(new THREE.BoxGeometry(6, 0.6, 4), std('#2a2d33'), 0, 0.3); add(new THREE.BoxGeometry(6, 3.0, 0.15), [std(col), std(col), std(col), std(col), face(textTex(label, { w: 1024, h: 512, bg: col, size: 120 })), std(col)], 0, 2.1, -1.95); [-2.9, 2.9].forEach(x => add(new THREE.BoxGeometry(0.12, 3.6, 0.12), M.steel, x, 1.8, -1.8)); break; }
+    case 'barricade': { for (let i = 0; i < 4; i++) { const x = -1.8 + i * 1.2; add(new THREE.CylinderGeometry(0.04, 0.04, 0.95, 12), M.steel, x, 0.5); add(new THREE.CylinderGeometry(0.17, 0.17, 0.04, 20), M.steel, x, 0.02); } add(new THREE.BoxGeometry(3.6, 0.06, 0.01), std(col), 0, 0.9); break; }
+    case 'pylon': { add(new THREE.BoxGeometry(0.7, 2.6, 0.35), [std(col), std(col), std(col), std(col), face(textTex(label, { w: 300, h: 1100, bg: col, size: 70 })), std(col)], 0, 1.3); break; }
+    case 'photo': { add(new THREE.TorusGeometry(1.45, 0.16, 16, 40, Math.PI), std(col), 0, 1.45); [-1.45, 1.45].forEach(x => add(new THREE.CylinderGeometry(0.16, 0.16, 1.45, 16), std(col), x, 0.72)); for (let i = 0; i < 14; i++) { const a = Math.PI * i / 13; add(new THREE.SphereGeometry(0.22, 14, 10), std(i % 2 ? '#ffffff' : col, { roughness: 0.3 }), Math.cos(a) * 1.45, 1.45 + Math.sin(a) * 1.45, 0.1); } add(new THREE.BoxGeometry(3.4, 0.08, 1.2), std('#f4f1ea'), 0, 0.04); break; }
+    case 'hanging': { add(new THREE.PlaneGeometry(1.6, 2.2), new THREE.MeshBasicMaterial({ map: textTex(label, { w: 600, h: 840, bg: col, size: 96 }), toneMapped: false, side: THREE.DoubleSide }), 0, 3.3); [-0.7, 0.7].forEach(x => add(new THREE.CylinderGeometry(0.01, 0.01, 0.6), M.dark, x, 4.7)); add(new THREE.CylinderGeometry(0.03, 0.03, 1.7), M.steel, 0, 4.4).rotation.z = Math.PI / 2; const sh = add(new THREE.PlaneGeometry(1.6, 0.4), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.12, depthWrite: false }), 0, 0.03); sh.rotation.x = -Math.PI / 2; break; }
+    case 'desk': { const sh = new THREE.Shape(); sh.absarc(0, 0, 1.6, 0.2 * Math.PI, 0.8 * Math.PI, false); sh.absarc(0, 0, 1.0, 0.8 * Math.PI, 0.2 * Math.PI, true); const geo = new THREE.ExtrudeGeometry(sh, { depth: 1.1, bevelEnabled: false, curveSegments: 24 }); geo.rotateX(-Math.PI / 2); geo.translate(0, 0, 1.2); g.add(new THREE.Mesh(geo, std(col))); break; }
+    case 'zone': { const pl = add(new THREE.PlaneGeometry(W, Dd), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.25, depthWrite: false }), 0, 0.05); pl.rotation.x = -Math.PI / 2; const ed = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, 0.01, Dd)), new THREE.LineBasicMaterial({ color: col })); ed.position.y = 0.06; g.add(ed); const t = add(new THREE.PlaneGeometry(Math.min(W * 0.8, label.length * 0.7 + 1), Math.min(1.2, Dd * 0.3)), new THREE.MeshBasicMaterial({ map: textTex(label, { w: 1024, h: 160, bg: col, size: 80 }), toneMapped: false }), 0, 0.07); t.rotation.x = -Math.PI / 2; break; }
+    default: { add(new THREE.CylinderGeometry(0.04, 0.04, 2), M.dark, 0, 1); add(new THREE.SphereGeometry(0.28, 20, 14), std(col, { emissive: col, emissiveIntensity: 0.3 }), 0, 2.1); }
+  }
+  const R = Math.max(W, Dd) * 0.62;
+  const ring = add(new THREE.RingGeometry(R + 0.2, R + 0.45, 48), new THREE.MeshBasicMaterial({ color: css('--accent'), transparent: true, opacity: 0.9, depthWrite: false }), 0, 0.06); ring.rotation.x = -Math.PI / 2; ring.visible = false; g.userData.ring = ring;
+  const lel = document.createElement('div'); lel.className = 'el' + (e.type === 'note' ? ' note' : ''); lel.textContent = e.type === 'note' ? (e.note || label) : label;
+  lel.addEventListener('click', (ev) => { ev.stopPropagation(); if (S.mode !== 'walk') selectElement(e.id); });
+  const lo = new CSS2DObject(lel); lo.position.y = (e.type === 'hanging' ? 4.9 : Math.min(c.h, 7.2)) + 0.35; g.add(lo); g.userData.label = lo; g.userData.always = e.type === 'note';
+  return g;
+}
+const elObjs = {};
+function placeElementObj(id) { const e = S.elements[id], o = elObjs[id]; if (!o || !e) return; o.position.set(e.x, 0, e.z); o.rotation.y = THREE.MathUtils.degToRad(e.rot || 0); const s = e.s || 1; o.scale.set(s, s, s); }
+function disposeObj(o) { o.parent?.remove(o); o.traverse(n => { if (n.isCSS2DObject) n.element.remove(); n.geometry?.dispose?.(); }); }
+function syncElements(docs) {
+  for (const id of Object.keys(elObjs)) if (!docs[id] || JSON.stringify(docs[id]) !== JSON.stringify(elObjs[id].userData.src)) { disposeObj(elObjs[id]); delete elObjs[id]; }
+  S.elements = {};
+  for (const [id, raw] of Object.entries(docs)) {
+    if (!raw || !CAT[raw.type] || fIndex[raw.f] == null || !isFinite(raw.x) || !isFinite(raw.z)) continue;
+    const e = { ...raw, id }; S.elements[id] = e;
+    if (!elObjs[id]) { const o = buildElement(e); o.userData.elId = id; o.userData.src = raw; elObjs[id] = o; floorObjs[fIndex[e.f]].elements.add(o); }
+    placeElementObj(id);
+  }
+  if (S.sel?.kind === 'el' && !S.elements[S.sel.id]) clearSel();
+  highlightSel(); applyVisibility(); if (S.panel === 'place' || S.sel?.kind === 'el') renderPanel();
+}
+const strip = (el) => { const { id, ...rest } = el; return { ...rest, at: Date.now() }; };
+let ghost = null;
+function startPlacing(type) {
+  if (!S.canWrite) { toast('This plan is view-only for you.'); return; }
+  S.measuring = false; stopGrab(); S.placing = type; if (ghost) disposeObj(ghost);
+  ghost = buildElement({ type, id: 'ghost', label: CAT[type].name });
+  ghost.traverse(n => { if (n.material) (Array.isArray(n.material) ? n.material : [n.material]).forEach(m => { m.transparent = true; m.opacity = Math.min(m.opacity ?? 1, 0.55); }); if (n.isCSS2DObject) n.visible = false; });
+  ghost.visible = false; floorObjs[S.mode === 'walk' ? walk.fi : S.focus].elements.add(ghost);
+  if (S.mode === 'overview' && S.display === 'stack') isolate(S.focus);
+  renderPanel(); renderHint();
+}
+function moveGhost() { if (!ghost) return; const fi = S.mode === 'walk' ? walk.fi : S.focus, p = floorPoint(fi); if (!p || (S.mode === 'walk' && p.distanceTo(walk.pos) > 30)) { ghost.visible = false; return; } ghost.visible = true; ghost.position.set(p.x, 0, p.z); if (S.mode === 'walk') ghost.rotation.y = Math.round(walk.yaw / (Math.PI / 12)) * Math.PI / 12; }
+function stopPlacing() { S.placing = null; if (ghost) { disposeObj(ghost); ghost = null; } renderPanel(); renderHint(); }
+async function dropElement(keep) {
+  const fi = S.mode === 'walk' ? walk.fi : S.focus, p = floorPoint(fi); if (!p || (S.mode === 'walk' && p.distanceTo(walk.pos) > 30)) return;
+  const type = S.placing, id = 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const rot = S.mode === 'walk' ? ((Math.round(THREE.MathUtils.radToDeg(walk.yaw) / 15) * 15) % 360 + 360) % 360 : 0;
+  const doc = { type, f: FL[fi].id, x: +p.x.toFixed(2), z: +p.z.toFixed(2), rot, s: 1, color: CAT[type].color, label: CAT[type].name, note: '', at: Date.now() };
+  if (type === 'zone') { doc.w = CAT.zone.w; doc.d = CAT.zone.d; }
+  if (!keep) stopPlacing();
+  if (await Store.set('elements', id, doc)) { if (Store.kind === 'db') S.elements[id] = { ...doc, id }; if (!keep && S.mode !== 'walk') selectElement(id); toast(`${CAT[type].name} placed on ${FL[fi].name}`); }
+}
+async function deleteElement(id) { const e = S.elements[id]; if (!e) return; await Store.remove('elements', id); clearSel(); toast(`${e.label || CAT[e.type].name} removed`); }
+function startGrab(id) { if (!S.canWrite || !S.elements[id]) return; S.grabbing = id; renderHint(); }
+function stopGrab(save) { if (!S.grabbing) return; const id = S.grabbing; S.grabbing = null; if (save && S.elements[id]) saveSoon('elements', id, () => strip(S.elements[id]), 30); renderHint(); }
+
+/* ---------- measuring ---------- */
+const measureG = new THREE.Group(); scene.add(measureG); let measurePrev = null;
+function addMeasurePoint(p) { S.measurePts.push({ x: p.x, z: p.z, fi: S.focus }); if (S.measurePts.length === 2) { const [a, b] = S.measurePts; S.measures.push({ a, b, fi: a.fi }); S.measurePts = []; tip.style.display = 'none'; drawMeasures(); renderPanel(); } }
+function drawMeasurePreview(p, ev) {
+  if (measurePrev) { measureG.remove(measurePrev); measurePrev.geometry.dispose(); }
+  const a = S.measurePts[0], y = floorY(a.fi) + 0.1;
+  measurePrev = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a.x, y, a.z), new THREE.Vector3(p.x, y, p.z)]), new THREE.LineBasicMaterial({ color: css('--accent'), depthTest: false })); measureG.add(measurePrev);
+  const d = Math.hypot(p.x - a.x, p.z - a.z); showTip(ev, `${d.toFixed(1)} m${DOT}${(d * 3.2808).toFixed(1)} ft`);
+}
+function drawMeasures() {
+  measureG.children.slice().forEach(c => disposeObj(c)); measurePrev = null;
+  S.measures.forEach(m => {
+    if (!floorVisible(m.fi) || S.mode === 'walk') return;
+    const y = floorY(m.fi) + 0.12, a = new THREE.Vector3(m.a.x, y, m.a.z), b = new THREE.Vector3(m.b.x, y, m.b.z), mat = new THREE.MeshBasicMaterial({ color: css('--accent'), depthTest: false });
+    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: css('--accent'), depthTest: false })); l.renderOrder = 10; measureG.add(l);
+    [a, b].forEach(p => { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.05, 16), mat); d.position.copy(p); d.renderOrder = 10; measureG.add(d); });
+    const el = document.createElement('div'); el.className = 'mlabel'; const dd = a.distanceTo(b); el.textContent = `${dd.toFixed(1)} m${DOT}${(dd * 3.2808).toFixed(1)} ft`;
+    const lo = new CSS2DObject(el); lo.position.copy(a.clone().add(b).multiplyScalar(0.5)); measureG.add(lo);
+  });
+}
+
+/* ---------- walk ---------- */
+const walk = { pos: new THREE.Vector3(), yaw: 0, pitch: -0.05, fi: 1, keys: {}, drag: null, joy: null, auto: null, noLock: false };
+function gridOf(fi) { const G = FL[fi].grid; if (!G._a) { const b = atob(G.data); G._a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) G._a[i] = b.charCodeAt(i); G.cx = (TX1 - TX0) / G.w; G.cz = (TZ1 - TZ0) / G.h; } return G; }
+function cellAt(fi, x, z) { const G = gridOf(fi), gx = Math.floor((x - TX0) / G.cx), gz = Math.floor((z - TZ0) / G.cz); if (gx < 0 || gz < 0 || gx >= G.w || gz >= G.h) return 1; return G._a[gz * G.w + gx]; }
+const walkable = (fi, x, z) => { const c = cellAt(fi, x, z); return c === 0 || (c === 2 && !S.corridorsOnly); };
+function nearestFree(fi, x, z, corridorOnly) {
+  const G = gridOf(fi), gx0 = Math.floor((x - TX0) / G.cx), gz0 = Math.floor((z - TZ0) / G.cz);
+  for (let r = 0; r < 90; r++) for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) { if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue; const gx = gx0 + dx, gz = gz0 + dz; if (gx < 0 || gz < 0 || gx >= G.w || gz >= G.h) continue; const v = G._a[gz * G.w + gx]; if (v === 0 || (!corridorOnly && v === 2)) return [TX0 + (gx + 0.5) * G.cx, TZ0 + (gz + 0.5) * G.cz]; }
+  return [x, z];
+}
+const locked = () => document.pointerLockElement === cvs;
+function exitLock() { if (locked()) document.exitPointerLock?.(); }
+function startWalk() {
+  let x, z, fi = S.focus, yaw = Math.PI;
+  if (S.sel?.kind === 'unit') { const u = FL[S.sel.fi].units[S.sel.ui]; fi = S.sel.fi; if (u.door) { [x, z] = u.door; yaw = u.face; } }
+  if (x == null) { const E = D.escalators[0].rect; x = (E[0] + E[2]) / 2; z = E[1] - 1.8; }
+  teleportWalk(fi, x, z, yaw, true);
+}
+function teleportWalk(fi, x, z, yaw, corridor = false) {
+  if (!walkable(fi, x, z) || (corridor && cellAt(fi, x, z) !== 0)) [x, z] = nearestFree(fi, x, z, corridor || S.corridorsOnly);
+  walk.fi = fi; S.focus = fi; walk.pos.set(x, floorY(fi) + EYE, z); if (yaw != null) walk.yaw = yaw;
+  if (ghost) { ghost.parent?.remove(ghost); floorObjs[fi].elements.add(ghost); }
+  applyVisibility(); renderFloorbar(); mmStatic = null;
+}
+function updateWalk(dt) {
+  if (walk.auto) stepAutoWalk(dt);
+  else {
+    const k = walk.keys; let f = 0, s = 0;
+    if (k.KeyW || k.ArrowUp) f += 1; if (k.KeyS || k.ArrowDown) f -= 1; if (k.KeyA) s -= 1; if (k.KeyD) s += 1;
+    if (k.ArrowLeft) walk.yaw += dt * 1.8; if (k.ArrowRight) walk.yaw -= dt * 1.8;
+    if (walk.joy) { f += -walk.joy.y; s += walk.joy.x; }
+    const sp = (k.ShiftLeft || k.ShiftRight ? 9 : 3.8) * dt;
+    if (f || s) {
+      const len = Math.max(1, Math.hypot(f, s)); f /= len; s /= len;
+      const dx = (-Math.sin(walk.yaw) * f + Math.cos(walk.yaw) * s) * sp, dz = (-Math.cos(walk.yaw) * f - Math.sin(walk.yaw) * s) * sp;
+      const R = 0.28, ok = (x, z) => walkable(walk.fi, x + R, z) && walkable(walk.fi, x - R, z) && walkable(walk.fi, x, z + R) && walkable(walk.fi, x, z - R);
+      if (ok(walk.pos.x + dx, walk.pos.z + dz)) { walk.pos.x += dx; walk.pos.z += dz; } else if (ok(walk.pos.x + dx, walk.pos.z)) walk.pos.x += dx; else if (ok(walk.pos.x, walk.pos.z + dz)) walk.pos.z += dz;
+    }
+    walk.pos.y += ((floorY(walk.fi) + EYE) - walk.pos.y) * Math.min(1, dt * 6);
+  }
+  persp.position.copy(walk.pos);
+  persp.lookAt(walk.pos.clone().add(new THREE.Vector3(-Math.sin(walk.yaw) * Math.cos(walk.pitch), Math.sin(walk.pitch), -Math.cos(walk.yaw) * Math.cos(walk.pitch))));
+}
+document.addEventListener('pointerlockchange', () => { if (locked()) walk.fails = 0; document.body.classList.toggle('locked', locked()); if (!locked()) $('#look').style.display = 'none'; renderHint(); });
+document.addEventListener('pointerlockerror', () => { walk.fails = (walk.fails || 0) + 1; if (walk.fails >= 2) walk.noLock = true; else toast('Click the view again to look around.'); renderHint(); });
+cvs.addEventListener('mousedown', (e) => {
+  if (S.mode !== 'walk' || e.button !== 0 || isTouch) return;
+  if (!locked() && !walk.noLock) { try { const r = cvs.requestPointerLock?.(); r?.catch?.(() => {}); } catch (err) { walk.noLock = true; } return; }
+  if (locked()) walkClick(e);
+});
+function walkClick(e) {
+  setRay(e);
+  if (S.placing) { dropElement(e.shiftKey); return; }
+  if (S.grabbing) { stopGrab(true); toast('Moved'); return; }
+  const id = pickElement(); if (id) { S.sel = { kind: 'el', id }; highlightSel(); openPanel('details'); return; }
+  const h = pickUnit(); if (h) { S.sel = { kind: 'unit', fi: h.fi, ui: h.ui }; S.editing = false; applyColors(); highlightSel(); openPanel('details'); }
+}
+document.addEventListener('mousemove', (e) => {
+  if (S.mode !== 'walk' || !locked()) return;
+  walk.yaw -= e.movementX * 0.0023; walk.pitch = Math.max(-1.25, Math.min(1.15, walk.pitch - e.movementY * 0.0023)); walk.auto = null;
+});
+cvs.addEventListener('pointerdown', (e) => { if (S.mode !== 'walk' || locked() || !(walk.noLock || isTouch)) return; walk.drag = { x: e.clientX, y: e.clientY, yaw: walk.yaw, pitch: walk.pitch, id: e.pointerId, moved: false }; cvs.setPointerCapture(e.pointerId); });
+cvs.addEventListener('pointermove', (e) => { if (S.mode === 'walk' && !locked() && (S.placing || S.grabbing) && !walk.drag) { setRay(e); if (S.placing) moveGhost(); else { const p = floorPoint(walk.fi), el = S.elements[S.grabbing]; if (p && el) { el.x = +p.x.toFixed(2); el.z = +p.z.toFixed(2); placeElementObj(el.id); } } } if (!walk.drag || walk.drag.id !== e.pointerId) return; const dx = e.clientX - walk.drag.x, dy = e.clientY - walk.drag.y; if (Math.hypot(dx, dy) > 4) walk.drag.moved = true; walk.yaw = walk.drag.yaw + dx * 0.0045; walk.pitch = Math.max(-1.2, Math.min(1.1, walk.drag.pitch + dy * 0.0035)); walk.auto = null; });
+cvs.addEventListener('pointerup', (e) => { if (!walk.drag || walk.drag.id !== e.pointerId) return; const moved = walk.drag.moved; walk.drag = null; if (!moved) walkClick(e); });
+cvs.addEventListener('wheel', (e) => { if (S.mode !== 'walk') return; e.preventDefault(); const f = -Math.sign(e.deltaY) * 1.2, nx = walk.pos.x - Math.sin(walk.yaw) * f, nz = walk.pos.z - Math.cos(walk.yaw) * f; if (walkable(walk.fi, nx, nz)) { walk.pos.x = nx; walk.pos.z = nz; } }, { passive: false });
+{ const j = $('#joy'), kn = j.firstElementChild;
+  const upd = (e) => { const r = j.getBoundingClientRect(); let x = (e.clientX - r.left - r.width / 2) / (r.width / 2), y = (e.clientY - r.top - r.height / 2) / (r.height / 2); const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } walk.joy = { x, y }; kn.style.transform = `translate(${x * 36}px, ${y * 36}px)`; };
+  j.addEventListener('pointerdown', (e) => { j.setPointerCapture(e.pointerId); upd(e); walk.auto = null; }); j.addEventListener('pointermove', (e) => { if (walk.joy) upd(e); });
+  const end = () => { walk.joy = null; kn.style.transform = ''; }; j.addEventListener('pointerup', end); j.addEventListener('pointercancel', end); }
+let lastLook = 0;
+function walkLookAt(now) {
+  if (now - lastLook < 100) return; lastLook = now;
+  ndc.set(0, 0); ray.setFromCamera(ndc, camera);
+  if (S.grabbing && locked()) { const p = floorPoint(walk.fi), e = S.elements[S.grabbing]; if (p && e && p.distanceTo(walk.pos) < 30) { e.x = +p.x.toFixed(2); e.z = +p.z.toFixed(2); placeElementObj(e.id); } }
+  if (S.placing && locked()) moveGhost();
+  const lk = $('#look'); if (!locked()) { lk.style.display = 'none'; return; }
+  const id = pickElement(); if (id) { const e = S.elements[id]; lk.textContent = e.label || CAT[e.type].name; lk.style.display = 'block'; return; }
+  const h = pickUnit(); if (h && (ray.intersectObject(floorObjs[h.fi].tints[h.ui])[0]?.distance ?? 99) < 40) { lk.textContent = `${brandOf(h.fi, h.ui)}${DOT}${FL[h.fi].units[h.ui].id}`; lk.style.display = 'block'; } else lk.style.display = 'none';
+}
+
+/* big floor map for walking */
+const mm = $('#mm'), mmx = mm.getContext('2d'); let mmStatic = null;
+function mmFit(fi) { let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; FL[fi].footprint.forEach(([x, z]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }); const W = mm.width, pad = 14, s = (W - pad * 2) / Math.max(x1 - x0, z1 - z0); return { s, ox: pad + ((W - pad * 2) - (x1 - x0) * s) / 2 - x0 * s, oz: pad + ((W - pad * 2) - (z1 - z0) * s) / 2 - z0 * s }; }
+function buildMmStatic(fi) {
+  const c = document.createElement('canvas'); c.width = mm.width; c.height = mm.height; const g = c.getContext('2d'), f = mmFit(fi), P = ([x, z]) => [x * f.s + f.ox, z * f.s + f.oz];
+  const poly = (p, fillS, strokeS, lw = 1) => { g.beginPath(); p.forEach((q, k) => { const [a, b] = P(q); k ? g.lineTo(a, b) : g.moveTo(a, b); }); g.closePath(); if (fillS) { g.fillStyle = fillS; g.fill(); } if (strokeS) { g.strokeStyle = strokeS; g.lineWidth = lw; g.stroke(); } };
+  g.fillStyle = '#f3f5f1'; g.fillRect(0, 0, c.width, c.height);
+  poly(FL[fi].footprint, '#ffffff', '#9aa29e', 2);
+  (FL[fi].boh || []).forEach(b => { g.beginPath(); [b.o, ...(b.h || [])].forEach(r => r.forEach((q, k) => { const [a, bb] = P(q); k ? g.lineTo(a, bb) : g.moveTo(a, bb); })); g.fillStyle = '#c4c9c3'; g.fill('evenodd'); });
+  FL[fi].voids.forEach(v => poly(v, '#dfeaf3', '#9fb6c8'));
+  FL[fi].units.forEach((u, ui) => poly(u.poly, u.zone ? 'rgba(160,170,165,.18)' : mixHex(shopHex(unitView(fi, ui).brand), '#ffffff', 0.35), '#ffffff', 1.5));
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  FL[fi].units.forEach((u, ui) => { const [a, b] = P(u.lp), w = Math.sqrt(u.area) * f.s; if (w < 34) return; g.font = `700 ${Math.max(11, Math.min(17, w / 5))}px "Archivo Narrow", sans-serif`; g.fillStyle = '#1c2321'; g.fillText(brandOf(fi, ui).toUpperCase(), a, b, w * 1.4); });
+  D.escalators.forEach(E => { if (!E.floors.includes(FL[fi].id)) return; const [x0, z0, x1, z1] = E.rect, [a, b] = P([x0, z0]), [c2, d] = P([x1, z1]); g.fillStyle = '#e2bd45'; g.fillRect(a, b, c2 - a, d - b); });
+  return { c, f, fi };
+}
+function drawMinimap() {
+  if (S.mode !== 'walk') return; const fi = walk.fi;
+  if (!mmStatic || mmStatic.fi !== fi) { mmStatic = buildMmStatic(fi); $('#mm-floor').textContent = FL[fi].name; }
+  const { c, f } = mmStatic, P = (x, z) => [x * f.s + f.ox, z * f.s + f.oz];
+  mmx.drawImage(c, 0, 0);
+  Object.values(S.elements).forEach(e => { if (fIndex[e.f] !== fi) return; const [a, b] = P(e.x, e.z); mmx.fillStyle = e.color || '#c8102e'; mmx.beginPath(); mmx.arc(a, b, 5, 0, 7); mmx.fill(); mmx.strokeStyle = '#fff'; mmx.lineWidth = 1.5; mmx.stroke(); });
+  if (S.route) { mmx.strokeStyle = css('--accent'); mmx.lineWidth = 5; mmx.lineJoin = 'round'; mmx.beginPath(); let st = false; S.route.pts.forEach(p => { if (p.fi !== fi) { st = false; return; } const [a, b] = P(p.x, p.z); st ? mmx.lineTo(a, b) : mmx.moveTo(a, b); st = true; }); mmx.stroke(); }
+  const [px, pz] = P(walk.pos.x, walk.pos.z);
+  mmx.save(); mmx.translate(px, pz); mmx.rotate(-walk.yaw);
+  const grd = mmx.createRadialGradient(0, 0, 4, 0, 0, 70); grd.addColorStop(0, 'rgba(29,107,100,.45)'); grd.addColorStop(1, 'rgba(29,107,100,0)');
+  mmx.fillStyle = grd; mmx.beginPath(); mmx.moveTo(0, 0); mmx.arc(0, 0, 70, -Math.PI / 2 - 0.55, -Math.PI / 2 + 0.55); mmx.closePath(); mmx.fill();
+  mmx.fillStyle = css('--accent'); mmx.strokeStyle = '#fff'; mmx.lineWidth = 2.5; mmx.beginPath(); mmx.moveTo(0, -13); mmx.lineTo(9, 9); mmx.lineTo(0, 4); mmx.lineTo(-9, 9); mmx.closePath(); mmx.fill(); mmx.stroke(); mmx.restore();
+}
+mm.addEventListener('click', (e) => { if (!mmStatic) return; const r = mm.getBoundingClientRect(), f = mmStatic.f, X = (e.clientX - r.left) / r.width * mm.width, Z = (e.clientY - r.top) / r.height * mm.height; teleportWalk(walk.fi, (X - f.ox) / f.s, (Z - f.oz) / f.s); });
+$('#mm-up').onclick = () => isolate(S.focus + 1); $('#mm-down').onclick = () => isolate(S.focus - 1); $('#mm-big').onclick = () => $('#minimap').classList.toggle('big');
+
+/* ---------- directions ---------- */
+class Heap { constructor() { this.k = []; this.v = []; } push(k, v) { const K = this.k, V = this.v; K.push(k); V.push(v); let i = K.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (V[p] <= V[i]) break; [K[p], K[i]] = [K[i], K[p]]; [V[p], V[i]] = [V[i], V[p]]; i = p; } } pop() { const K = this.k, V = this.v, top = K[0], lk = K.pop(), lv = V.pop(); if (K.length) { K[0] = lk; V[0] = lv; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < K.length && V[l] < V[m]) m = l; if (r < K.length && V[r] < V[m]) m = r; if (m === i) break; [K[m], K[i]] = [K[i], K[m]]; [V[m], V[i]] = [V[i], V[m]]; i = m; } } return top; } get size() { return this.k.length; } }
+function findRoute(start, goal) {
+  FL.forEach((_, i) => gridOf(i)); const G0 = gridOf(0), W = G0.w, H = G0.h, N = W * H, NF = FL.length;
+  const toCell = (fi, x, z) => { const G = gridOf(fi), [fx, fz] = cellAt(fi, x, z) === 0 ? [x, z] : nearestFree(fi, x, z, true); return fi * N + Math.floor((fz - TZ0) / G.cz) * W + Math.floor((fx - TX0) / G.cx); };
+  const cxz = (id) => { const fi = Math.floor(id / N), r = id % N, G = gridOf(fi); return [fi, TX0 + ((r % W) + 0.5) * G.cx, TZ0 + (Math.floor(r / W) + 0.5) * G.cz]; };
+  const s = toCell(start.fi, start.x, start.z), t = toCell(goal.fi, goal.x, goal.z);
+  const links = new Map(), link = (a, b, c, how) => { if (!links.has(a)) links.set(a, []); links.get(a).push([b, c, how]); };
+  escLinks.forEach(c => { const A = toCell(c.a, c.landA[0], c.landA[1]), B = toCell(c.b, c.landB[0], c.landB[1]); link(A, B, 18, c); link(B, A, 18, c); });
+  D.lifts.forEach(L => { const x = (L.rect[0] + L.rect[2]) / 2, z = L.rect[3] + 2.2, ids = L.floors.map(id => fIndex[id]), cells = ids.map(fi => toCell(fi, x, z)); cells.forEach((a, i) => cells.forEach((b, j) => { if (i !== j) link(a, b, 28 + 6 * Math.abs(ids[i] - ids[j]), { lift: L }); })); });
+  const [tf, tx, tz] = cxz(t), cell = G0.cx, h = (id) => { const [f, x, z] = cxz(id); return Math.hypot(x - tx, z - tz) / cell + Math.abs(f - tf) * 10; };
+  const g = new Float32Array(N * NF).fill(Infinity), came = new Int32Array(N * NF).fill(-1), how = new Map(), closed = new Uint8Array(N * NF), open = new Heap();
+  g[s] = 0; open.push(s, h(s)); let it = 0;
+  const dirs = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.414], [1, -1, 1.414], [-1, 1, 1.414], [-1, -1, 1.414]];
+  while (open.size && it++ < 1e6) {
+    const cur = open.pop(); if (closed[cur]) continue; closed[cur] = 1; if (cur === t) break;
+    const fi = Math.floor(cur / N), r = cur % N, x = r % W, z = Math.floor(r / W), A = gridOf(fi)._a;
+    for (const [dx, dz, c] of dirs) { const nx = x + dx, nz = z + dz; if (nx < 0 || nz < 0 || nx >= W || nz >= H) continue; const ni = nz * W + nx; if (A[ni] !== 0) continue; if (dx && dz && (A[z * W + nx] !== 0 || A[nz * W + x] !== 0)) continue; const nid = fi * N + ni, ng = g[cur] + c; if (ng < g[nid]) { g[nid] = ng; came[nid] = cur; open.push(nid, ng + h(nid)); } }
+    const L = links.get(cur); if (L) for (const [b, cost, hw] of L) { const ng = g[cur] + cost; if (ng < g[b]) { g[b] = ng; came[b] = cur; how.set(b, hw); open.push(b, ng + h(b)); } }
+  }
+  if (came[t] === -1 && s !== t) return null;
+  const ids = []; for (let c = t; c !== -1; c = came[c]) ids.push(c); ids.reverse();
+  const runs = []; let run = [ids[0]];
+  for (let i = 1; i < ids.length; i++) { if (how.has(ids[i]) && Math.floor(ids[i] / N) !== Math.floor(ids[i - 1] / N)) { runs.push({ cells: run }); runs.push({ link: how.get(ids[i]), from: ids[i - 1], to: ids[i] }); run = [ids[i]]; } else run.push(ids[i]); }
+  runs.push({ cells: run });
+  const los = (fi, a, b) => { const A = gridOf(fi)._a, x0 = a % W, z0 = Math.floor(a / W), x1 = b % W, z1 = Math.floor(b / W), n = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0)); for (let i = 0; i <= n; i++) { const x = Math.round(x0 + (x1 - x0) * i / (n || 1)), z = Math.round(z0 + (z1 - z0) * i / (n || 1)); if (A[z * W + x] !== 0) return false; } return true; };
+  const pts = [], steps = []; let dist = 0;
+  runs.forEach(R => {
+    if (R.cells) { const fi = Math.floor(R.cells[0] / N), loc = R.cells.map(c => c % N), keep = [loc[0]]; let an = 0; for (let i = 2; i < loc.length; i++) if (!los(fi, loc[an], loc[i])) { keep.push(loc[i - 1]); an = i - 1; } if (loc.length > 1) keep.push(loc[loc.length - 1]); let d = 0; keep.forEach((c, i) => { const [, x, z] = cxz(fi * N + c); if (i) d += Math.hypot(x - pts[pts.length - 1].x, z - pts[pts.length - 1].z); pts.push({ fi, x, z }); }); dist += d; steps.push({ kind: 'walk', fi, d }); }
+    else { const [fa] = cxz(R.from), [fb] = cxz(R.to); if (R.link.E) { const c = R.link, up = fb > fa, p1 = up ? c.bottom : c.top, p2 = up ? c.top : c.bottom; pts.push({ fi: fa, x: p1[0], z: p1[1] }, { fi: fb, x: p2[0], z: p2[1] }); steps.push({ kind: 'esc', name: c.E.name, from: fa, to: fb }); } else steps.push({ kind: 'lift', name: R.link.lift.name, from: fa, to: fb }); }
+  });
+  return { pts, steps, dist };
+}
+const routeG = new THREE.Group(); scene.add(routeG);
+const arrowTex = (() => { const c = document.createElement('canvas'); c.width = 64; c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#000'; g.globalAlpha = 0.35; g.beginPath(); g.moveTo(14, 12); g.lineTo(40, 32); g.lineTo(14, 52); g.lineTo(26, 52); g.lineTo(52, 32); g.lineTo(26, 12); g.fill(); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })();
+function drawRoute() {
+  routeG.children.slice().forEach(c => disposeObj(c)); routeG.userData.tex = null;
+  if (!S.route) return;
+  const P = S.route.pts.filter(p => floorVisible(p.fi)).map(p => new THREE.Vector3(p.x, floorY(p.fi) + 0.18, p.z)); if (P.length < 2) return;
+  const curve = new THREE.CurvePath(); for (let i = 0; i < P.length - 1; i++) if (P[i].distanceToSquared(P[i + 1]) > 1e-4) curve.add(new THREE.LineCurve3(P[i], P[i + 1]));
+  if (!curve.curves.length) return;
+  const tex = arrowTex.clone(); tex.needsUpdate = true; tex.repeat.set(curve.getLength() / 1.2, 1);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(64, P.length * 24), S.mode === 'walk' ? 0.2 : 0.38, 8, false), new THREE.MeshBasicMaterial({ color: css('--accent'), map: tex, transparent: true, opacity: 0.95, depthWrite: false, depthTest: S.mode === 'walk', toneMapped: false }));
+  tube.renderOrder = 20; routeG.add(tube); routeG.userData.tex = tex;
+  if (S.mode !== 'walk') { const mk = (p, t) => { const el = document.createElement('div'); el.className = 'pin'; el.textContent = t; const o = new CSS2DObject(el); o.position.copy(p).add(new THREE.Vector3(0, 2.2, 0)); routeG.add(o); }; mk(P[0], 'Start'); mk(P[P.length - 1], S.route.toName); }
+}
+function routeOrigins() {
+  const o = D.entrances.map(e => ({ key: e.id, name: e.name, fi: fIndex[e.floor], x: e.pos[0], z: e.pos[1] }));
+  const L = D.lifts[0]; FL.forEach((f, fi) => { if (L.floors.includes(f.id)) o.push({ key: 'lift-' + f.id, name: `Lifts, ${f.name}`, fi, x: (L.rect[0] + L.rect[2]) / 2, z: L.rect[3] + 2.2 }); });
+  if (S.mode === 'walk') o.unshift({ key: 'here', name: 'Where I am standing', fi: walk.fi, x: walk.pos.x, z: walk.pos.z });
+  return o;
+}
+function computeRoute(fromKey, to) {
+  const from = routeOrigins().find(o => o.key === fromKey) || routeOrigins()[0], u = FL[to.fi].units[to.ui];
+  const r = findRoute(from, u.door ? { fi: to.fi, x: u.door[0], z: u.door[1] } : { fi: to.fi, x: u.lp[0], z: u.lp[1] });
+  if (!r) { S.route = null; toast('No walkable route was found between these points.'); drawRoute(); renderPanel(); return; }
+  r.pts.push({ fi: to.fi, x: u.lp[0], z: u.lp[1] }); Object.assign(r, { fromName: from.name, toName: `${brandOf(to.fi, to.ui)}${DOT}${u.id}`, to, fromKey: from.key });
+  S.route = r; renderPanel();
+  if (S.mode === 'overview') {
+    const multi = new Set(r.pts.map(p => p.fi)).size > 1;
+    if (multi) { S.display = 'stack'; if (S.explode < 0.3) S.explode = 0.45; } else { S.display = 'single'; S.focus = to.fi; }
+    applyLayout(); renderFloorbar();
+    const xs = r.pts.map(p => p.x), zs = r.pts.map(p => p.z), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2, span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs));
+    const y = (floorY(r.pts[0].fi) + floorY(to.fi)) / 2; animateCam(new THREE.Vector3(cx, y, cz).addScaledVector(new THREE.Vector3(0.4, 0.62, 0.68).normalize(), (span * 1.25 + 45) * aspectK()), new THREE.Vector3(cx, y, cz));
+  } else { if (S.mode === 'plan') isolate(r.pts[0].fi); drawRoute(); }
+}
+function stepAutoWalk(dt) {
+  const a = walk.auto, P = a.pts; if (a.i >= P.length - 1) { walk.auto = null; toast('You have arrived.'); return; }
+  const p = P[a.i], q = P[a.i + 1], py = floorY(p.fi) + EYE, qy = floorY(q.fi) + EYE, seg = Math.hypot(q.x - p.x, q.z - p.z, qy - py);
+  a.t += (dt * 4.2) / Math.max(seg, 0.01); if (a.t >= 1) { a.t = 0; a.i++; if (walk.fi !== q.fi) { walk.fi = q.fi; S.focus = q.fi; renderFloorbar(); } return; }
+  walk.pos.set(p.x + (q.x - p.x) * a.t, py + (qy - py) * a.t, p.z + (q.z - p.z) * a.t);
+  let d = Math.atan2(-(q.x - p.x), -(q.z - p.z)) - walk.yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; walk.yaw += d * Math.min(1, dt * 4); walk.pitch += (-0.06 - walk.pitch) * Math.min(1, dt * 3);
+}
+function walkRoute() { if (!S.route) return; if (S.mode !== 'walk') setMode('walk'); const P = S.route.pts; walk.fi = P[0].fi; S.focus = P[0].fi; walk.pos.set(P[0].x, floorY(P[0].fi) + EYE, P[0].z); walk.auto = { pts: P, i: 0, t: 0 }; drawRoute(); }
+
+/* ---------- saved views & presenting ---------- */
+const PRESETS = [{ id: 'p-all', name: 'All levels', mode: 'overview', display: 'stack', explode: 0.7, focus: 1 }, ...FL.map((f, i) => ({ id: 'p-' + f.id, name: `${f.name} plan`, mode: 'plan', display: 'single', explode: 0, focus: i }))];
+function captureView(name) { const cam = S.mode === 'plan' ? ortho : persp, tgt = S.mode === 'plan' ? ocontrols.target : controls.target; return { name, mode: S.mode === 'walk' ? 'overview' : S.mode, display: S.display, explode: S.explode, focus: S.focus, cam: cam.position.toArray().map(v => +v.toFixed(2)), target: tgt.toArray().map(v => +v.toFixed(2)), zoom: +ortho.zoom.toFixed(3), at: Date.now() }; }
+function goView(v) {
+  if (S.mode === 'walk') setMode('overview');
+  S.display = v.display || 'single'; S.explode = v.explode ?? 0.7; S.focus = v.focus ?? 1;
+  if (v.mode === 'plan') { if (S.mode !== 'plan') setMode('plan'); applyLayout(); if (v.cam) { ortho.position.fromArray(v.cam); ocontrols.target.fromArray(v.target); ortho.zoom = v.zoom || 1; ortho.updateProjectionMatrix(); } else animateOrtho(new THREE.Vector3(0, floorY(S.focus), 0), 1); }
+  else { if (S.mode !== 'overview') setMode('overview'); applyLayout(); if (v.cam) animateCam(new THREE.Vector3().fromArray(v.cam), new THREE.Vector3().fromArray(v.target), 1300); else { const p = overviewPose(); animateCam(p.pos, p.target, 1300); } }
+  renderFloorbar(); renderHint();
+}
+const allViews = () => { const s = Object.entries(S.views).map(([id, v]) => ({ id, ...v })).sort((a, b) => (a.order ?? a.at) - (b.order ?? b.at)); return s.length ? s : PRESETS; };
+let autoT = null;
+function startPresent() { closePanel(); document.body.classList.add('presenting'); S.presentIdx = 0; showPresent(); try { document.documentElement.requestFullscreen?.().catch(() => {}); } catch (e) {} }
+function stopPresent() { document.body.classList.remove('presenting'); clearInterval(autoT); autoT = null; $('#p-auto').textContent = 'Auto-play'; try { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); } catch (e) {} }
+function showPresent() { const vs = allViews(), v = vs[((S.presentIdx % vs.length) + vs.length) % vs.length]; $('#p-title').textContent = v.name; goView(v); }
+$('#p-exit').onclick = stopPresent; $('#p-next').onclick = () => { S.presentIdx++; showPresent(); }; $('#p-prev').onclick = () => { S.presentIdx--; showPresent(); };
+$('#p-auto').onclick = () => { if (autoT) { clearInterval(autoT); autoT = null; $('#p-auto').textContent = 'Auto-play'; } else { autoT = setInterval(() => { S.presentIdx++; showPresent(); }, 6000); $('#p-auto').textContent = 'Pause'; } };
+
+/* ---------- search ---------- */
+const q = $('#q'), results = $('#results'); let resSel = 0;
+function renderResults() {
+  if (results.hidden) return;
+  const term = q.value.trim().toLowerCase();
+  const rows = term ? unitIndex.filter(({ fi, ui, u }) => brandOf(fi, ui).toLowerCase().includes(term) || u.id.toLowerCase().includes(term)).slice(0, 40)
+    : unitIndex.filter(r => r.fi === S.focus).sort((a, b) => brandOf(a.fi, a.ui).localeCompare(brandOf(b.fi, b.ui)));
+  resSel = Math.min(resSel, Math.max(0, rows.length - 1));
+  results.innerHTML = (term ? '' : `<div class="resh">${esc(FL[S.focus].name)}</div>`) + (rows.length ? rows.map((r, i) => `<button class="res ${i === resSel ? 'on' : ''}" data-fi="${r.fi}" data-ui="${r.ui}"><i class="dot" style="background:${unitHex(r.fi, r.ui, S.colorBy === 'plain' ? 'shop' : S.colorBy)}"></i><b>${esc(brandOf(r.fi, r.ui))}</b><span>${esc(r.u.id)}${DOT}${FL[r.fi].short}</span></button>`).join('') : '<div class="empty" style="padding:8px 9px">No shop or unit matches. Try part of the name, or a unit number like G-21.</div>');
+}
+q.addEventListener('focus', () => { results.hidden = false; resSel = 0; renderResults(); });
+q.addEventListener('input', () => { resSel = 0; renderResults(); });
+q.addEventListener('keydown', (e) => {
+  const rows = $$('.res', results);
+  if (e.key === 'ArrowDown') { resSel = Math.min(rows.length - 1, resSel + 1); renderResults(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { resSel = Math.max(0, resSel - 1); renderResults(); e.preventDefault(); }
+  else if (e.key === 'Enter') rows[resSel]?.click();
+  else if (e.key === 'Escape') { q.blur(); results.hidden = true; }
+});
+results.addEventListener('mousedown', (e) => e.preventDefault());
+results.addEventListener('click', (e) => { const b = e.target.closest('.res'); if (!b) return; const fi = +b.dataset.fi, ui = +b.dataset.ui; results.hidden = true; q.blur(); if (S.mode === 'walk') { const u = FL[fi].units[ui]; if (u.door) teleportWalk(fi, u.door[0], u.door[1], u.face, true); S.sel = { kind: 'unit', fi, ui }; applyColors(); highlightSel(); openPanel('details'); } else selectUnit(fi, ui, true); });
+q.addEventListener('blur', () => setTimeout(() => { results.hidden = true; }, 120));
+
+/* ---------- panel ---------- */
+const TITLES = { details: 'Details', place: 'Place items', route: 'Directions', measure: 'Measure', views: 'Saved views', options: 'Display', export: 'Layout file' };
+function openPanel(p) { S.panel = p; if (p !== 'measure' && S.measuring) { S.measuring = false; S.measurePts = []; } if (p !== 'place' && S.placing) stopPlacing(); renderPanel(); renderHint(); }
+function closePanel() { if (S.placing) stopPlacing(); S.measuring = false; S.measurePts = []; S.panel = null; renderPanel(); renderHint(); }
+$('#pclose').onclick = () => { if (S.panel === 'details') clearSel(); else closePanel(); };
+$$('#tools .tool').forEach(b => b.onclick = () => { if (S.panel === b.dataset.p) closePanel(); else openPanel(b.dataset.p); });
+function renderPanel() {
+  $$('#tools .tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === S.panel)));
+  document.body.classList.toggle('tool', !!(S.placing || S.measuring));
+  $('#panel').hidden = !S.panel; if (!S.panel) return;
+  $('#ptitle').textContent = TITLES[S.panel]; const P = $('#pane'), W = S.canWrite;
+  if (S.panel === 'details') {
+    if (S.sel?.kind === 'unit') {
+      const { fi, ui } = S.sel, F = FL[fi], u = F.units[ui], v = unitView(fi, ui), area = u.sqft ? `${fmt(u.sqft, 2)} sqft` : `\u2248 ${fmt(u.area * SQFT)} sqft`;
+      const key = `${F.id}~${u.id}`.replace(/[^A-Za-z0-9_\-.~:@+]/g, '_');
+      P.innerHTML = `
+        <div class="eyebrow">${esc(F.name)}${DOT}Unit ${esc(u.id)}</div>
+        <h2>${esc(v.brand || 'Available unit')}</h2>
+        <div><span class="pill s-${v.status}"><i class="dot"></i>${STATUS[v.status]}</span></div>
+        <dl class="kv"><dt>Area</dt><dd>${area}</dd>${S.labelMode === 'full' && u.frontage ? `<dt>Shopfront</dt><dd>${fmt(u.frontage, 1)} m</dd>` : ''}</dl>
+        ${v.note ? `<div class="hint">${esc(v.note)}</div>` : ''}
+        <div class="btnrow">${S.mode === 'walk' ? '' : '<button class="btn primary" id="u-fly">Zoom to shop</button><button class="btn" id="u-walk">Walk here</button>'}<button class="btn" id="u-route">Directions</button>${W && !S.editing ? '<button class="btn" id="u-edit">Edit</button>' : ''}</div>
+        ${W && S.editing ? `<div class="sep"></div>
+          <label class="field">Brand<input type="text" id="u-brand" value="${esc(v.brand)}" placeholder="Leave empty for an available unit"></label>
+          <label class="field">Status<select id="u-status">${Object.entries(STATUS).map(([k, s]) => `<option value="${k}" ${k === v.status ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
+          <label class="field">Note<textarea id="u-note" placeholder="Shown to everyone viewing this plan">${esc(v.note)}</textarea></label>
+          <div class="btnrow"><button class="btn primary" id="u-save">Save</button><button class="btn ghost" id="u-cancel">Cancel</button>${v.edited ? '<button class="btn ghost" id="u-reset">Back to PDF</button>' : ''}</div>` : ''}
+        ${v.edited && !S.editing ? '<div class="hint">Edited here. Use Edit to go back to the PDF.</div>' : ''}`;
+      $('#u-fly') && ($('#u-fly').onclick = () => selectUnit(fi, ui, true));
+      $('#u-walk') && ($('#u-walk').onclick = () => setMode('walk'));
+      $('#u-route').onclick = () => { S.routeTo = { fi, ui }; openPanel('route'); };
+      $('#u-edit') && ($('#u-edit').onclick = () => { S.editing = true; renderPanel(); $('#u-brand')?.focus(); });
+      if (S.editing) {
+        $('#u-cancel').onclick = () => { S.editing = false; renderPanel(); };
+        $('#u-save').onclick = async () => { const brand = $('#u-brand').value.trim().toUpperCase(), status = brand ? $('#u-status').value : 'vacant', note = $('#u-note').value.trim(); if (await Store.set('units', key, { floor: F.id, unit: u.id, brand, status, note, at: Date.now() })) { S.editing = false; renderPanel(); toast('Saved'); } };
+        $('#u-reset') && ($('#u-reset').onclick = async () => { await Store.remove('units', key); S.editing = false; renderPanel(); });
+      }
+      return;
+    }
+    if (S.sel?.kind === 'el' && S.elements[S.sel.id]) {
+      const e = S.elements[S.sel.id], c = CAT[e.type];
+      P.innerHTML = `
+        <div class="eyebrow">${esc(c.name)}${DOT}${esc(FL[fIndex[e.f]].name)}</div>
+        <h2>${esc(e.label || c.name)}</h2>
+        <dl class="kv"><dt>Size</dt><dd>${fmt((e.type === 'zone' ? e.w : c.w) * (e.s || 1), 1)} \u00d7 ${fmt((e.type === 'zone' ? e.d : c.d) * (e.s || 1), 1)} m</dd></dl>
+        ${W ? `<label class="field">Label<input type="text" id="e-label" value="${esc(e.label)}"></label>
+        ${e.type === 'note' ? `<label class="field">Note<textarea id="e-note">${esc(e.note)}</textarea></label>` : ''}
+        ${e.type === 'zone' ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label class="field">Width (m)<input type="text" inputmode="decimal" id="e-w" value="${e.w}"></label><label class="field">Depth (m)<input type="text" inputmode="decimal" id="e-d" value="${e.d}"></label></div>` : ''}
+        <label class="field">Turn <input type="range" id="e-rot" min="0" max="345" step="15" value="${e.rot || 0}"></label>
+        <label class="field">Size <input type="range" id="e-s" min="0.5" max="2.5" step="0.05" value="${e.s || 1}"></label>
+        <div style="display:grid;gap:6px;font-size:12.5px;color:var(--muted)">Colour<div class="swatches">${SWATCHES.map(s => `<button style="background:${s}" data-c="${s}" aria-label="Colour ${s}" aria-pressed="${s === e.color}"></button>`).join('')}</div></div>
+        <div class="hint">${S.mode === 'walk' ? 'Press G (or Move) to pick it up, look where it should go, then click.' : 'Drag it to move. Arrow keys nudge, R turns, Delete removes.'}</div>
+        <div class="btnrow">${S.mode === 'walk' ? '<button class="btn" id="e-grab">Move</button>' : ''}<button class="btn" id="e-dup">Duplicate</button><button class="btn danger" id="e-del">Delete</button></div>` : (e.note ? `<div class="hint">${esc(e.note)}</div>` : '')}`;
+      if (W) {
+        const up = (k, val, rebuild) => { e[k] = val; if (rebuild) { const o = elObjs[e.id]; if (o) { disposeObj(o); const nb = buildElement(e); nb.userData.elId = e.id; nb.userData.src = strip(e); elObjs[e.id] = nb; floorObjs[fIndex[e.f]].elements.add(nb); highlightSel(); applyVisibility(); } } placeElementObj(e.id); saveSoon('elements', e.id, () => strip(e), 500); };
+        $('#e-label').oninput = (ev) => up('label', ev.target.value, true);
+        $('#e-note') && ($('#e-note').oninput = (ev) => up('note', ev.target.value, true));
+        $('#e-w') && ($('#e-w').onchange = (ev) => up('w', Math.max(1, Math.min(60, parseFloat(ev.target.value) || 8)), true));
+        $('#e-d') && ($('#e-d').onchange = (ev) => up('d', Math.max(1, Math.min(60, parseFloat(ev.target.value) || 6)), true));
+        $('#e-rot').oninput = (ev) => up('rot', +ev.target.value); $('#e-s').oninput = (ev) => up('s', +ev.target.value);
+        $$('.swatches button', P).forEach(b => b.onclick = () => { up('color', b.dataset.c, true); $$('.swatches button', P).forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+        $('#e-grab') && ($('#e-grab').onclick = () => { startGrab(e.id); toast('Look where it should go and click.'); });
+        $('#e-dup').onclick = async () => { const id = 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), d = { ...strip(e), x: e.x + 2, z: e.z + 2 }; if (await Store.set('elements', id, d)) { if (Store.kind === 'db') S.elements[id] = { ...d, id }; selectElement(id); } };
+        $('#e-del').onclick = () => deleteElement(e.id);
+      }
+      return;
+    }
+    S.panel = null; $('#panel').hidden = true; $$('#tools .tool').forEach(b => b.setAttribute('aria-pressed', 'false')); return;
+  }
+  if (S.panel === 'place') {
+    const fi = S.mode === 'walk' ? walk.fi : S.focus, items = Object.values(S.elements).filter(e => e.f === FL[fi].id);
+    P.innerHTML = `
+      <div class="hint">Pick an item, then click on the ${esc(FL[fi].name)}. Items are real size.${S.mode === 'walk' ? ' In Walk, aim the cross at the floor and click.' : ''}</div>
+      ${W ? '' : '<div class="hint"><b>This plan is view-only for you.</b></div>'}
+      <div class="palette">${Object.entries(CAT).map(([k, c]) => `<button class="tile" data-t="${k}" aria-pressed="${S.placing === k}" ${W ? '' : 'disabled'}><svg viewBox="0 0 24 24">${ICONS[k]}</svg>${c.name}</button>`).join('')}</div>
+      <div class="sep"></div><div class="eyebrow">On this floor (${items.length})</div>
+      <div class="list">${items.length ? items.sort((a, b) => (b.at || 0) - (a.at || 0)).map(e => `<button class="li" data-id="${e.id}"><span>${esc(e.label || CAT[e.type].name)}<small>${esc(CAT[e.type].name)}</small></span><span class="hint">Show</span></button>`).join('') : '<div class="empty">Nothing placed on this floor yet.</div>'}</div>`;
+    $$('.tile', P).forEach(t => t.onclick = () => { S.placing === t.dataset.t ? stopPlacing() : startPlacing(t.dataset.t); });
+    $$('.li', P).forEach(b => b.onclick = () => { const e = S.elements[b.dataset.id]; if (S.mode === 'walk') teleportWalk(fIndex[e.f], e.x, e.z + 4, 0, true); else { selectElement(e.id); flyTo(e.x, fIndex[e.f], e.z, 30); } });
+    return;
+  }
+  if (S.panel === 'route') {
+    const to = S.routeTo || (S.sel?.kind === 'unit' ? S.sel : null), origins = routeOrigins(), r = S.route;
+    P.innerHTML = `
+      <label class="field">From<select id="r-from">${origins.map(o => `<option value="${o.key}" ${o.key === (r?.fromKey || S.routeFrom) ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select></label>
+      <label class="field">To<input type="search" id="r-to" list="r-units" placeholder="Shop or unit" value="${to ? esc(brandOf(to.fi, to.ui) + DOT + FL[to.fi].units[to.ui].id) : ''}"></label>
+      <datalist id="r-units">${unitIndex.map(({ fi, ui, u }) => `<option value="${esc(brandOf(fi, ui) + DOT + u.id)}">${esc(FL[fi].name)}</option>`).join('')}</datalist>
+      <div class="btnrow"><button class="btn primary" id="r-go">Show route</button>${r ? '<button class="btn" id="r-walk">Walk it</button><button class="btn ghost" id="r-clear">Clear</button>' : ''}</div>
+      ${r ? `<div class="sep"></div><div class="eyebrow">${fmt(r.dist)} m${DOT}about ${Math.max(1, Math.round(r.dist / 70 + r.steps.filter(s => s.kind !== 'walk').length * 0.6))} min</div>
+      <ol class="steps">${[`Start at ${esc(r.fromName)}.`, ...r.steps.flatMap(s => s.kind === 'walk' ? (s.d > 1 ? [`Walk ${fmt(s.d)} m on the ${esc(FL[s.fi].name)}.`] : []) : [`Take the ${esc(s.name.toLowerCase())} ${s.kind === 'esc' ? (s.to > s.from ? 'up ' : 'down ') : ''}to the ${esc(FL[s.to].name)}.`]), `Arrive at ${esc(r.toName)}.`].map(t => `<li><span>${t}</span></li>`).join('')}</ol>` : '<div class="hint">The route follows the corridors, escalators and lifts.</div>'}`;
+    $('#r-from').onchange = (e) => { S.routeFrom = e.target.value; };
+    $('#r-go').onclick = () => { const val = $('#r-to').value.trim().toLowerCase(); let t = null; if (val) t = unitIndex.find(({ fi, ui, u }) => (brandOf(fi, ui) + DOT + u.id).toLowerCase() === val) || unitIndex.find(({ fi, ui, u }) => brandOf(fi, ui).toLowerCase().includes(val) || u.id.toLowerCase() === val); else t = to; if (!t) { toast('Pick a shop to route to.'); return; } S.routeTo = { fi: t.fi, ui: t.ui }; computeRoute($('#r-from').value, S.routeTo); };
+    $('#r-walk') && ($('#r-walk').onclick = walkRoute);
+    $('#r-clear') && ($('#r-clear').onclick = () => { S.route = null; applyLayout(); renderPanel(); });
+    return;
+  }
+  if (S.panel === 'measure') {
+    P.innerHTML = `
+      <div class="btnrow"><button class="btn ${S.measuring ? '' : 'primary'}" id="m-tog">${S.measuring ? 'Stop measuring' : 'Start measuring'}</button>${S.measures.length ? '<button class="btn ghost" id="m-clear">Clear all</button>' : ''}</div>
+      <div class="hint">${S.measuring ? (S.measurePts.length ? 'Click the end point.' : 'Click the start point on the floor.') : 'Click two points on the floor. Plan view gives the most exact clicks.'}</div>
+      <div class="list">${S.measures.map((m, i) => { const d = Math.hypot(m.b.x - m.a.x, m.b.z - m.a.z); return `<div class="li"><span>${fmt(d, 1)} m${DOT}${fmt(d * 3.2808, 1)} ft<small>${esc(FL[m.fi].name)}</small></span><button class="btn ghost" data-i="${i}">Remove</button></div>`; }).join('')}</div>`;
+    $('#m-tog').onclick = () => { S.measuring = !S.measuring; S.measurePts = []; if (S.measuring) { if (S.placing) stopPlacing(); if (S.mode === 'walk') setMode('plan'); else if (S.display === 'stack') isolate(S.focus); } renderPanel(); renderHint(); };
+    $('#m-clear') && ($('#m-clear').onclick = () => { S.measures = []; drawMeasures(); renderPanel(); });
+    $$('.li .btn', P).forEach(b => b.onclick = () => { S.measures.splice(+b.dataset.i, 1); drawMeasures(); renderPanel(); });
+    return;
+  }
+  if (S.panel === 'views') {
+    const saved = Object.entries(S.views).map(([id, v]) => ({ id, ...v })).sort((a, b) => (a.order ?? a.at) - (b.order ?? b.at));
+    P.innerHTML = `
+      <button class="btn primary" id="v-present">Present ${saved.length ? 'saved views' : 'each floor'}</button>
+      ${W ? `<div style="display:grid;grid-template-columns:1fr auto;gap:6px"><input type="text" id="v-name" placeholder="Name this view"><button class="btn" id="v-save">Save view</button></div>` : ''}
+      <div class="list">${saved.length ? saved.map(v => `<div class="li"><span>${esc(v.name)}<small>${v.mode === 'plan' ? 'Plan' : '3D'}${DOT}${esc(FL[v.focus]?.name || '')}</small></span><span class="btnrow"><button class="btn" data-go="${v.id}">Go</button>${W ? `<button class="btn ghost" data-del="${v.id}" aria-label="Delete view">\u2715</button>` : ''}</span></div>`).join('') : '<div class="empty">Frame a shot and save it to build a walkthrough for your meeting.</div>'}</div>
+      <div class="sep"></div><div class="eyebrow">Quick views</div>
+      <div class="list">${PRESETS.map(v => `<button class="li" data-preset="${v.id}"><span>${esc(v.name)}</span><span class="hint">Go</span></button>`).join('')}</div>`;
+    $('#v-save') && ($('#v-save').onclick = async () => { const name = $('#v-name').value.trim() || `View ${saved.length + 1}`; if (await Store.set('views', 'v' + Date.now().toString(36), { ...captureView(name), order: Date.now() })) toast('View saved'); });
+    $$('[data-go]', P).forEach(b => b.onclick = () => goView(S.views[b.dataset.go])); $$('[data-del]', P).forEach(b => b.onclick = () => Store.remove('views', b.dataset.del));
+    $$('[data-preset]', P).forEach(b => b.onclick = () => goView(PRESETS.find(p => p.id === b.dataset.preset))); $('#v-present').onclick = startPresent;
+    return;
+  }
+  if (S.panel === 'options') {
+    const seg = (id, opts, cur) => `<div class="seg small" role="group" id="${id}">${opts.map(([v, l]) => `<button data-v="${v}" aria-pressed="${String(v) === String(cur)}">${l}</button>`).join('')}</div>`;
+    P.innerHTML = `
+      <div class="optrow"><div class="eyebrow">Shop labels</div>${seg('o-lab', [['off', 'Off'], ['name', 'Name'], ['unit', '+ Unit no.'], ['full', 'Full']], S.labelMode)}</div>
+      <div class="optrow"><div class="eyebrow">Colour shops by</div>${seg('o-col', [['status', 'Status'], ['shop', 'Shop'], ['plain', 'None']], S.colorBy)}</div>
+      <div class="optrow"><div class="eyebrow">Drawing on the floor</div>${seg('o-plan', [[0, 'Off'], [1, 'Lines'], [2, 'Original colours']], S.plan)}</div>
+      <label class="field">Wall height <input type="range" id="o-wall" min="0.4" max="4.6" step="0.1" value="${S.wallH}"></label>
+      <label class="field">Gap between floors (All view) <input type="range" id="o-exp" min="0" max="1" step="0.01" value="${S.explode}"></label>
+      <div class="optrow"><div class="eyebrow">Show</div><div class="chips">
+        <button class="chip" id="o-signs" aria-pressed="${S.signs}">Shop signs</button>
+        <button class="chip" id="o-ell" aria-pressed="${S.elLabels}">Item labels</button>
+        <button class="chip" id="o-corr" aria-pressed="${S.corridorsOnly}">Walk: stay in corridors</button></div></div>
+      <div class="optrow"><div class="eyebrow">Highlight</div><div class="chips">${Object.entries(STATUS).map(([k, l]) => `<button class="chip s-${k}" data-s="${k}" aria-pressed="${S.filter.has(k)}"><i class="dot"></i>${l}</button>`).join('')}</div></div>
+      <div class="hint">${Store.kind === 'db' ? (S.canWrite ? 'Placed items, saved views and edits are shared with everyone who can open this page.' : 'You can view this plan. Ask the owner for edit access to place items.') : 'Changes are saved in this browser only. Use File to share a layout.'}</div>`;
+    const segOn = (id, fn) => $$(`#${id} button`, P).forEach(b => b.onclick = () => { fn(b.dataset.v); savePrefs(); renderPanel(); });
+    segOn('o-lab', v => { S.labelMode = v; fillLabels(); applyVisibility(); applyWallHeight(); });
+    segOn('o-col', v => { S.colorBy = v; floorObjs.forEach(o => buildUnits(o)); fillLabels(); applyColors(); applyVisibility(); });
+    segOn('o-plan', v => { S.plan = +v; applyVisibility(); });
+    $('#o-wall').oninput = (e) => { S.wallH = +e.target.value; applyWallHeight(); applyVisibility(); highlightSel(); savePrefs(); };
+    $('#o-exp').oninput = (e) => { S.explode = +e.target.value; if (S.mode === 'overview' && S.display !== 'stack') { S.display = 'stack'; renderFloorbar(); } applyLayout(); };
+    [['o-signs', 'signs'], ['o-ell', 'elLabels'], ['o-corr', 'corridorsOnly']].forEach(([id, k]) => $('#' + id).onclick = () => { S[k] = !S[k]; savePrefs(); applyVisibility(); renderPanel(); });
+    $$('[data-s]', P).forEach(c => c.onclick = () => { const s = c.dataset.s; S.filter.has(s) ? S.filter.delete(s) : S.filter.add(s); applyColors(); renderPanel(); });
+    return;
+  }
+  if (S.panel === 'export') {
+    P.innerHTML = `
+      <div class="hint">A layout file holds placed items, saved views and brand edits. Load it into this page on another computer, or keep it as a record.</div>
+      <button class="btn" id="x-json">Save layout file (.json)</button>
+      <button class="btn" id="x-csv">Save list of placed items (.csv)</button>
+      <button class="btn" id="x-import">Load a layout file\u2026</button><input type="file" id="x-file" accept=".json,application/json" hidden>`;
+    $('#x-json').onclick = () => offerFile('felix-plaza-layout.json', JSON.stringify({ app: 'felix-plaza-3d', version: 1, exported: new Date().toISOString(), elements: Object.fromEntries(Object.entries(S.elements).map(([id, e]) => [id, strip(e)])), views: S.views, units: S.overrides }, null, 2));
+    $('#x-csv').onclick = () => { const rows = [['Floor', 'Item', 'Label', 'X (m)', 'Z (m)', 'Turn', 'Size', 'Width (m)', 'Depth (m)', 'Note']]; Object.values(S.elements).forEach(e => { const c = CAT[e.type]; rows.push([FL[fIndex[e.f]].name, c.name, e.label, e.x, e.z, e.rot || 0, e.s || 1, ((e.type === 'zone' ? e.w : c.w) * (e.s || 1)).toFixed(2), ((e.type === 'zone' ? e.d : c.d) * (e.s || 1)).toFixed(2), e.note || '']); }); offerFile('felix-plaza-items.csv', rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')); };
+    $('#x-import').onclick = () => $('#x-file').click();
+    $('#x-file').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; e.target.value = ''; try { const j = JSON.parse(await f.text()); if (j.app !== 'felix-plaza-3d') throw 0; let n = 0; for (const [id, d] of Object.entries(j.elements || {})) if (CAT[d.type] && fIndex[d.f] != null) { await Store.set('elements', id, d); n++; } for (const [id, d] of Object.entries(j.views || {})) await Store.set('views', id, d); for (const [k, d] of Object.entries(j.units || {})) { const [fl, un] = k.split('~'); await Store.set('units', k.replace(/[^A-Za-z0-9_\-.~:@+]/g, '_'), { floor: fl, unit: un, ...d, at: Date.now() }); } toast(`Loaded ${n} items`); } catch (err) { toast('That file is not a Felix Plaza layout file.'); } };
+  }
+}
+function renderHint() {
+  let html = '';
+  if (S.mode === 'walk') {
+    if (S.grabbing) html = '<span><b>Moving item.</b> Look where it should go and click.</span>';
+    else if (S.placing) html = `<span><b>Placing ${esc(CAT[S.placing].name.toLowerCase())}.</b> Aim the cross at the floor and click.</span><span>Hold <kbd>Shift</kbd> to place several</span>`;
+    else if (locked()) html = '<span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span><span><kbd>Shift</kbd> run</span><span><kbd>Q</kbd> <kbd>E</kbd> floor down / up</span><span>Click a shop for details</span><span><kbd>Esc</kbd> frees the mouse</span>';
+    else if (walk.noLock || isTouch) html = '<span>Drag to look around</span><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span><span>Click the map to jump</span>';
+    else html = '<span><b>Click the view to look around.</b></span><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span><span>Click the map to jump</span><span><kbd>M</kbd> bigger map</span>';
+  } else if (S.placing) html = `<span><b>Click on the floor</b> to place a ${esc(CAT[S.placing].name.toLowerCase())}.</span><span>Hold <kbd>Shift</kbd> to place several</span><span><kbd>Esc</kbd> stop</span>`;
+  else if (S.measuring) html = '<span><b>Click two points</b> on the floor.</span><span><kbd>Esc</kbd> stop</span>';
+  else if (S.mode === 'plan') html = '<span>Drag to move</span><span>Scroll to zoom where you point</span><span>Double-click to zoom in</span><span>Click a shop for details</span>';
+  else html = S.display === 'stack' ? '<span>Drag to turn</span><span>Right-drag to move</span><span>Scroll in on a floor to show just that floor</span>' : '<span>Drag to turn</span><span>Right-drag to move</span><span>Scroll to zoom where you point</span><span>Double-click to zoom in</span>';
+  $('#hint').innerHTML = html;
+}
+
+/* ---------- keys ---------- */
+addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea, select')) return;
+  const k = e.key.toLowerCase();
+  if (S.mode === 'walk') {
+    walk.keys[e.code] = true;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+    if (k === 'q' || e.code === 'BracketLeft' || e.code === 'PageDown') isolate(S.focus - 1);
+    if (k === 'e' || e.code === 'BracketRight' || e.code === 'PageUp') isolate(S.focus + 1);
+    if (k === 'm') $('#minimap').classList.toggle('big');
+    if (k === 'g' && S.sel?.kind === 'el') startGrab(S.sel.id);
+    if (k === 'r' && S.sel?.kind === 'el' && S.canWrite) { const el = S.elements[S.sel.id]; el.rot = ((el.rot || 0) + 15) % 360; placeElementObj(el.id); saveSoon('elements', el.id, () => strip(el)); }
+    if ((e.code === 'Delete' || e.code === 'Backspace') && S.sel?.kind === 'el' && S.canWrite) deleteElement(S.sel.id);
+    if (e.code === 'Escape') { if (S.grabbing) stopGrab(true); if (S.placing) stopPlacing(); }
+    if (k === '1') setMode('overview'); if (k === '2') setMode('plan'); if (k === 'h') toggleUi();
+    return;
+  }
+  if (e.code === 'Escape') { if (S.placing) stopPlacing(); else if (S.measuring) { S.measuring = false; S.measurePts = []; tip.style.display = 'none'; drawMeasures(); renderPanel(); renderHint(); } else if (document.body.classList.contains('presenting')) stopPresent(); else if (S.panel) { if (S.panel === 'details') clearSel(); else closePanel(); } }
+  if (k === '1') setMode('overview'); if (k === '2') setMode('plan'); if (k === '3') setMode('walk');
+  if (k === 'h') toggleUi(); if (k === 'f') fitView();
+  if (e.code === 'BracketRight' || e.code === 'PageUp') isolate(S.focus + 1); if (e.code === 'BracketLeft' || e.code === 'PageDown') isolate(S.focus - 1);
+  if (S.sel?.kind === 'el' && S.canWrite) {
+    const el = S.elements[S.sel.id]; if (!el) return; let ch = false; const n = e.shiftKey ? 1 : 0.25;
+    if (k === 'r') { el.rot = ((el.rot || 0) + (e.shiftKey ? -15 : 15) + 360) % 360; ch = true; }
+    if (e.code === 'ArrowLeft') { el.x -= n; ch = true; } if (e.code === 'ArrowRight') { el.x += n; ch = true; } if (e.code === 'ArrowUp') { el.z -= n; ch = true; } if (e.code === 'ArrowDown') { el.z += n; ch = true; }
+    if (e.code === 'Delete' || e.code === 'Backspace') { deleteElement(S.sel.id); e.preventDefault(); return; }
+    if (ch) { e.preventDefault(); placeElementObj(el.id); saveSoon('elements', el.id, () => strip(el)); }
+  }
+});
+addEventListener('keyup', (e) => { walk.keys[e.code] = false; }); addEventListener('blur', () => { walk.keys = {}; });
+function toggleUi() { S.uiHidden = !S.uiHidden; document.body.classList.toggle('uihidden', S.uiHidden); $('#b-ui-t').textContent = S.uiHidden ? 'Show panels' : 'Hide panels'; }
+$('#b-ui').onclick = toggleUi;
+$('#m-overview').onclick = () => setMode('overview'); $('#m-plan').onclick = () => setMode('plan'); $('#m-walk').onclick = () => setMode('walk');
+
+/* ---------- files & pictures ---------- */
+let downloads = null; (async () => { try { downloads = window.claude?.use ? await window.claude.use('downloads') : null; } catch (e) {} })();
+async function offerFile(name, data) {
+  if (downloads) { try { await downloads.save({ filename: name, data }); toast('Saved ' + name); } catch (e) { if (e.code !== 'declined') toast('The file could not be saved here.'); } return; }
+  try { const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data])); const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 4000); } catch (e) { toast('Saving files is not available in this view.'); }
+}
+$('#b-shot').onclick = () => {
+  renderer.render(scene, camera);
+  const c = document.createElement('canvas'); c.width = cvs.width; c.height = cvs.height; const g = c.getContext('2d'), sc = c.width / innerWidth; g.drawImage(cvs, 0, 0);
+  $$('#labels > div').forEach(el => { if (el.style.display === 'none' || el.classList.contains('hid') || el.classList.contains('dim')) return; const r = el.getBoundingClientRect(); if (r.width < 2 || r.right < 0 || r.left > innerWidth || r.bottom < 0 || r.top > innerHeight) return; const cs = getComputedStyle(el); g.fillStyle = cs.backgroundColor; g.beginPath(); (g.roundRect ? g.roundRect(r.left * sc, r.top * sc, r.width * sc, r.height * sc, 8 * sc) : g.rect(r.left * sc, r.top * sc, r.width * sc, r.height * sc)); g.fill(); g.fillStyle = getComputedStyle(el.querySelector('b') || el).color; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${12.5 * sc}px "Archivo Narrow", sans-serif`; g.fillText(el.innerText.replace(/\n/g, '  '), (r.left + r.width / 2) * sc, (r.top + r.height / 2) * sc); });
+  g.font = `600 ${14 * sc}px Archivo, sans-serif`; g.fillStyle = '#1c2321'; g.textAlign = 'left'; g.fillText(`Felix Plaza${DOT}${S.mode !== 'overview' || S.display === 'single' ? FL[S.focus].name : 'All levels'}${DOT}Brand zoning 10 Oct 2026`, 16 * sc, c.height - 16 * sc);
+  c.toBlob(b => b && offerFile(`felix-plaza-${FL[S.focus].short.toLowerCase()}-${S.mode}.png`, b), 'image/png');
+};
+
+/* ---------- labels declutter ---------- */
+let lastDc = 0; const v3 = new THREE.Vector3();
+function declutter() {
+  const placed = [], items = [], W = innerWidth, H = innerHeight;
+  floorObjs.forEach(o => o.labels.forEach(l => { if (l.visible && o.group.visible) items.push(l); }));
+  const isSel = (l) => S.sel?.kind === 'unit' && S.sel.fi === l.userData.fi && S.sel.ui === l.userData.ui;
+  items.sort((a, b) => (isSel(b) ? 1e9 : b.userData.prio) - (isSel(a) ? 1e9 : a.userData.prio));
+  items.forEach(l => {
+    l.getWorldPosition(v3); const dist = S.mode === 'walk' ? v3.distanceTo(walk.pos) : 0; v3.project(camera);
+    const x = (v3.x + 1) / 2 * W, y = (1 - v3.y) / 2 * H, el = l.element;
+    const w = (l.userData.w ||= el.offsetWidth || 90), h = el.offsetHeight || 24, r = [x - w / 2 - 2, y - h / 2 - 2, x + w / 2 + 2, y + h / 2 + 2];
+    const hide = v3.z > 1 || dist > 32 || placed.some(p => r[0] < p[2] && r[2] > p[0] && r[1] < p[3] && r[3] > p[1]);
+    el.classList.toggle('hid', hide); if (!hide) placed.push(r);
+  });
+}
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock();
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); labelR.setSize(innerWidth, innerHeight); persp.aspect = innerWidth / innerHeight; persp.updateProjectionMatrix(); fitOrtho(); });
+function loop() {
+  const dt = Math.min(0.05, clock.getDelta()), now = performance.now();
+  if (tween) tween.step(now);
+  if (S.mode === 'walk') { updateWalk(dt); walkLookAt(now); } else if (S.mode === 'plan') ocontrols.update(); else controls.update();
+  escMovers.forEach(m => { m.t.offset.y -= dt * 0.9 * m.dir; });
+  if (routeG.userData.tex) routeG.userData.tex.offset.x -= dt * 1.6;
+  lifts.forEach(L => { const ty = floorY(L.ids[L.target]), y = L.car.position.y; if (Math.abs(ty - y) < 0.02) { L.car.position.y = ty; L.wait -= dt; if (L.wait <= 0) { L.target = Math.floor(Math.random() * L.ids.length); L.wait = 3 + Math.random() * 4; } } else L.car.position.y += Math.sign(ty - y) * Math.min(Math.abs(ty - y), dt * 1.6); });
+  if (now - lastDc > 150) { declutter(); lastDc = now; }
+  if (S.mode === 'walk' && now - (loop.mm || 0) > 100) { drawMinimap(); loop.mm = now; }
+  renderer.render(scene, camera); labelR.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- boot ---------- */
+await Store.init();
+floorObjs.forEach(o => buildUnits(o, true)); buildLabels(); buildPins(); applyLayout(); applyColors(); applyWallHeight();
+renderFloorbar(); renderPanel(); renderHint();
+{ const p = overviewPose(); persp.position.copy(p.pos).add(new THREE.Vector3(40, 60, 60)); controls.target.copy(p.target); animateCam(p.pos, p.target, 1600); }
+Store.subscribe('elements', syncElements);
+Store.subscribe('views', (v) => { S.views = v; if (S.panel === 'views') renderPanel(); });
+Store.subscribe('units', (docs) => { const o = {}; Object.values(docs).forEach(d => { if (d && d.floor && d.unit) o[`${d.floor}~${d.unit}`] = { brand: d.brand ?? '', status: STATUS[d.status] ? d.status : 'vacant', note: d.note || '' }; }); S.overrides = o; floorObjs.forEach(fo => buildUnits(fo, true)); fillLabels(); applyColors(); mmStatic = null; if (S.sel?.kind === 'unit' && S.panel === 'details') renderPanel(); });
+setLoad(1, 'Ready');
+{ const ld = $('#loading'); ld.style.pointerEvents = 'none'; ld.style.opacity = 0; setTimeout(() => ld.remove(), 450); }
+loop();
+window.__fp = { S, FL, floorObjs, setMode, isolate, selectUnit, computeRoute, walk, teleportWalk };
+</script>
