@@ -114,6 +114,19 @@ button.li{cursor:pointer} button.li:hover{background:var(--panel-2)}
 .swatches button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
 .empty{padding:6px 2px;color:var(--muted);font-size:13px;line-height:1.5}
 .optrow{display:grid;gap:7px}
+.stbl{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.stbl th{font-family:var(--f-label);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:right;padding:0 0 6px 6px;white-space:nowrap}
+.stbl th:first-child,.stbl td:first-child{text-align:left;padding-left:0}
+.stbl td{text-align:right;padding:7px 0 7px 6px;border-top:1px solid var(--line);vertical-align:top;white-space:nowrap}
+.stbl td small{display:block;color:var(--faint);font-size:10.5px;font-family:var(--f-mono)}
+.stbl tr.tot td{font-weight:700;border-top:0;background:var(--panel-2)}
+.stbl tr.tot td:first-child{padding-left:8px;border-radius:8px 0 0 8px} .stbl tr.tot td:last-child{padding-right:8px;border-radius:0 8px 8px 0}
+.stbl tr.cur td:first-child{color:var(--accent);font-weight:700}
+.stbl .bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--line);margin-top:5px;width:100%}
+.stbl .bar i{display:block;height:100%;background:var(--sc)}
+#panel.wide{width:min(560px,calc(100vw - 32px))}
+#legend{cursor:pointer}
+#legend b{font-family:var(--f-mono);font-weight:500;font-size:12px}
 
 /* bottom */
 #legend{left:var(--gl);bottom:var(--bot);padding:8px 12px;display:flex;gap:14px;align-items:center;font-size:12.5px;flex-wrap:wrap}
@@ -211,6 +224,7 @@ body.tool .ul,body.tool .pin,body.tool .el{pointer-events:none}
 <div id="floorbar" class="ui card" role="group" aria-label="Floors"></div>
 
 <div id="tools" class="ui card" role="toolbar" aria-label="Tools">
+  <button class="tool" data-p="stats" aria-pressed="false" title="Leasing summary by floor"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Leasing</span></button>
   <button class="tool" data-p="place" aria-pressed="false" title="Place standees, kiosks, decor"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="14" rx="1"/><path d="M6 21h12M12 17v4"/></svg><span>Place</span></button>
   <button class="tool" data-p="route" aria-pressed="false" title="Directions to a shop"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/></svg><span>Route</span></button>
   <button class="tool" data-p="measure" aria-pressed="false" title="Measure a distance"><svg viewBox="0 0 24 24"><path d="m3 17 14-14 4 4L7 21z"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2"/></svg><span>Measure</span></button>
@@ -225,10 +239,10 @@ body.tool .ul,body.tool .pin,body.tool .el{pointer-events:none}
 </aside>
 
 <div id="legend" class="ui card">
-  <span class="s-signed"><i class="dot"></i>Signed</span>
-  <span class="s-near"><i class="dot"></i>Near to signing</span>
-  <span class="s-discussion"><i class="dot"></i>Under discussion</span>
-  <span class="s-vacant"><i class="dot"></i>Available</span>
+  <span class="s-signed"><i class="dot"></i>Signed <b data-lg="signed"></b></span>
+  <span class="s-near"><i class="dot"></i>Near to signing <b data-lg="near"></b></span>
+  <span class="s-discussion"><i class="dot"></i>Under discussion <b data-lg="discussion"></b></span>
+  <span class="s-vacant"><i class="dot"></i>Available <b data-lg="vacant"></b></span>
 </div>
 <div id="zoom" class="ui card">
   <button class="icon" id="z-in" title="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -674,11 +688,30 @@ function showAll() {
   if (S.mode === 'plan' || S.mode === 'walk') setMode('overview');
   S.display = 'stack'; if (S.explode < 0.2) S.explode = 0.7; applyLayout(); const p = overviewPose(); animateCam(p.pos, p.target); renderFloorbar(); renderHint();
 }
+function mallStats() {
+  const blank = () => ({ area: { signed: 0, near: 0, discussion: 0, vacant: 0 }, n: { signed: 0, near: 0, discussion: 0, vacant: 0 }, areaT: 0, nT: 0 });
+  const total = blank(), floors = FL.map(() => blank()), brands = new Set();
+  FL.forEach((F, fi) => F.units.forEach((u, ui) => {
+    if (u.zone) return;
+    const v = unitView(fi, ui), a = u.sqft || Math.abs(polyArea(u.poly)) * SQFT;
+    for (const st of [total, floors[fi]]) { st.area[v.status] += a; st.n[v.status]++; st.areaT += a; st.nT++; }
+    if (v.status === 'signed' && v.brand) brands.add(v.brand);
+  }));
+  return { total, floors, brands: brands.size };
+}
+function refreshStats() {
+  const t = mallStats().total;
+  $$('#legend [data-lg]').forEach(b => { b.textContent = t.areaT ? fmt(t.area[b.dataset.lg] / t.areaT * 100) + '%' : ''; });
+  renderFloorbar(); if (S.panel === 'stats') renderPanel();
+}
+$('#legend').addEventListener('click', () => openPanel('stats'));
+$('#legend').title = 'Share of mall area. Click for floor-by-floor numbers.';
 function renderFloorbar() {
   const all = S.display === 'stack' && S.mode === 'overview';
   $('#floorbar').innerHTML = `<button class="fl all" aria-pressed="${all}" title="Show all floors" data-f="all">ALL</button>` +
-    [...FL.keys()].reverse().map(fi => `<button class="fl" data-f="${fi}" aria-pressed="${!all && fi === S.focus}">${FL[fi].short}<span class="tipx">${FL[fi].name}</span></button>`).join('');
+    [...FL.keys()].reverse().map(fi => `<button class="fl" data-f="${fi}" aria-pressed="${!all && fi === S.focus}">${FL[fi].short}<span class="tipx">${FL[fi].name}${floorTip(fi)}</span></button>`).join('');
 }
+function floorTip(fi) { if (typeof mallStats !== 'function') return ''; const st = mallStats().floors[fi]; return st.areaT ? `${DOT}${fmt(st.area.signed / st.areaT * 100)}% signed${DOT}${st.nT} units` : ''; }
 $('#floorbar').addEventListener('click', (e) => { const b = e.target.closest('.fl'); if (!b) return; if (b.dataset.f === 'all') showAll(); else isolate(+b.dataset.f); });
 
 /* ---------- picking ---------- */
@@ -1125,7 +1158,7 @@ results.addEventListener('click', (e) => { const b = e.target.closest('.res'); i
 q.addEventListener('blur', () => setTimeout(() => { results.hidden = true; }, 120));
 
 /* ---------- panel ---------- */
-const TITLES = { details: 'Details', place: 'Place items', route: 'Directions', measure: 'Measure', views: 'Saved views', options: 'Display', export: 'Layout file' };
+const TITLES = { stats: 'Leasing summary', details: 'Details', place: 'Place items', route: 'Directions', measure: 'Measure', views: 'Saved views', options: 'Display', export: 'Layout file' };
 function openPanel(p) { S.panel = p; if (p !== 'measure' && S.measuring) { S.measuring = false; S.measurePts = []; } if (p !== 'place' && S.placing) stopPlacing(); renderPanel(); renderHint(); }
 function closePanel() { if (S.placing) stopPlacing(); S.measuring = false; S.measurePts = []; S.panel = null; renderPanel(); renderHint(); }
 $('#pclose').onclick = () => { if (S.panel === 'details') clearSel(); else closePanel(); };
@@ -1135,6 +1168,22 @@ function renderPanel() {
   document.body.classList.toggle('tool', !!(S.placing || S.measuring));
   $('#panel').hidden = !S.panel; if (!S.panel) return;
   $('#ptitle').textContent = TITLES[S.panel]; const P = $('#pane'), W = S.canWrite;
+  $('#panel').classList.toggle('wide', S.panel === 'stats');
+  if (S.panel === 'stats') {
+    const by = S.statsBy || 'area', K = Object.keys(STATUS), all = mallStats();
+    const cell = (st, k) => { const v = by === 'area' ? st.area[k] : st.n[k], t = by === 'area' ? st.areaT : st.nT; return `<td>${t ? fmt(v / t * 100, 1) : '0.0'}%<small>${by === 'area' ? fmt(st.area[k] / 1000, 1) + 'k sqft' : st.n[k] + ' unit' + (st.n[k] === 1 ? '' : 's')}</small></td>`; };
+    const bar = (st) => `<div class="bar">${K.map(k => { const v = by === 'area' ? st.area[k] / (st.areaT || 1) : st.n[k] / (st.nT || 1); return v ? `<i class="s-${k}" style="width:${(v * 100).toFixed(2)}%"></i>` : ''; }).join('')}</div>`;
+    const row = (name, st, cls) => `<tr class="${cls}"><td>${name}${bar(st)}</td><td>${st.nT}<small>${fmt(st.areaT / 1000, 1)}k sqft</small></td>${K.map(k => cell(st, k)).join('')}</tr>`;
+    P.innerHTML = `
+      <div class="seg small" role="group" id="st-by"><button data-v="area" aria-pressed="${by === 'area'}">By area (sqft)</button><button data-v="count" aria-pressed="${by === 'count'}">By number of units</button></div>
+      <div style="overflow-x:auto"><table class="stbl"><thead><tr><th>Level</th><th>Units</th><th class="s-signed">Signed</th><th>Near</th><th>Discussion</th><th>Available</th></tr></thead><tbody>
+        ${row('Whole mall', all.total, 'tot')}
+        ${[...FL.keys()].reverse().map(fi => row(FL[fi].name, all.floors[fi], fi === S.focus ? 'cur' : '')).join('')}
+      </tbody></table></div>
+      <div class="hint">${all.total.nT} units, ${all.brands} different brands signed. Area uses the sqft printed on the plan, or the measured area where none is printed (Cinepolis, T-01 to T-03). Changes made with Edit on a shop update these numbers straight away.</div>`;
+    $$('#st-by button', P).forEach(b => b.onclick = () => { S.statsBy = b.dataset.v; renderPanel(); });
+    return;
+  }
   if (S.panel === 'details') {
     if (S.sel?.kind === 'unit') {
       const { fi, ui } = S.sel, F = FL[fi], u = F.units[ui], v = unitView(fi, ui), area = u.sqft ? `${fmt(u.sqft, 2)} sqft` : `\u2248 ${fmt(u.area * SQFT)} sqft`;
@@ -1387,7 +1436,7 @@ renderFloorbar(); renderPanel(); renderHint();
 { const p = overviewPose(); persp.position.copy(p.pos).add(new THREE.Vector3(40, 60, 60)); controls.target.copy(p.target); animateCam(p.pos, p.target, 1600); }
 Store.subscribe('elements', syncElements);
 Store.subscribe('views', (v) => { S.views = v; if (S.panel === 'views') renderPanel(); });
-Store.subscribe('units', (docs) => { const o = {}; Object.values(docs).forEach(d => { if (d && d.floor && d.unit) o[`${d.floor}~${d.unit}`] = { brand: d.brand ?? '', status: STATUS[d.status] ? d.status : 'vacant', note: d.note || '' }; }); S.overrides = o; floorObjs.forEach(fo => buildUnits(fo, true)); fillLabels(); applyColors(); mmStatic = null; if (S.sel?.kind === 'unit' && S.panel === 'details') renderPanel(); });
+Store.subscribe('units', (docs) => { const o = {}; Object.values(docs).forEach(d => { if (d && d.floor && d.unit) o[`${d.floor}~${d.unit}`] = { brand: d.brand ?? '', status: STATUS[d.status] ? d.status : 'vacant', note: d.note || '' }; }); S.overrides = o; floorObjs.forEach(fo => buildUnits(fo, true)); fillLabels(); applyColors(); mmStatic = null; refreshStats(); if (S.sel?.kind === 'unit' && S.panel === 'details') renderPanel(); });
 setLoad(1, 'Ready');
 { const ld = $('#loading'); ld.style.pointerEvents = 'none'; ld.style.opacity = 0; setTimeout(() => ld.remove(), 450); }
 loop();
