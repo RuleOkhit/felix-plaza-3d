@@ -239,6 +239,7 @@ body.tool .ul,body.tool .pin,body.tool .el{pointer-events:none}
 </aside>
 
 <div id="legend" class="ui card">
+  <span id="lg-scope" class="eyebrow" style="color:var(--ink)">Whole mall</span>
   <span class="s-signed"><i class="dot"></i>Signed <b data-lg="signed"></b></span>
   <span class="s-near"><i class="dot"></i>Near to signing <b data-lg="near"></b></span>
   <span class="s-discussion"><i class="dot"></i>Under discussion <b data-lg="discussion"></b></span>
@@ -699,14 +700,16 @@ function mallStats() {
   }));
   return { total, floors, brands: brands.size };
 }
-function refreshStats() {
-  const t = mallStats().total;
-  $$('#legend [data-lg]').forEach(b => { b.textContent = t.areaT ? fmt(t.area[b.dataset.lg] / t.areaT * 100) + '%' : ''; });
-  renderFloorbar(); if (S.panel === 'stats') renderPanel();
+function updateLegend() {
+  const all = mallStats(), whole = S.mode === 'overview' && S.display === 'stack', t = whole ? all.total : all.floors[S.focus];
+  $('#lg-scope').textContent = whole ? 'Whole mall' : FL[S.focus].name;
+  $$('#legend [data-lg]').forEach(b => { b.textContent = t.areaT ? fmt(t.area[b.dataset.lg] / t.areaT * 100, 1) + '%' : ''; });
 }
+function refreshStats() { renderFloorbar(); if (S.panel === 'stats') renderPanel(); }
 $('#legend').addEventListener('click', () => openPanel('stats'));
-$('#legend').title = 'Share of mall area. Click for floor-by-floor numbers.';
+$('#legend').title = 'Share of floor area for the floor you are viewing. Click for every floor.';
 function renderFloorbar() {
+  updateLegend(); if (S.panel === 'stats' && renderFloorbar.ready) renderPanel(); renderFloorbar.ready = true;
   const all = S.display === 'stack' && S.mode === 'overview';
   $('#floorbar').innerHTML = `<button class="fl all" aria-pressed="${all}" title="Show all floors" data-f="all">ALL</button>` +
     [...FL.keys()].reverse().map(fi => `<button class="fl" data-f="${fi}" aria-pressed="${!all && fi === S.focus}">${FL[fi].short}<span class="tipx">${FL[fi].name}${floorTip(fi)}</span></button>`).join('');
