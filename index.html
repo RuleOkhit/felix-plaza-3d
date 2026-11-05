@@ -283,6 +283,7 @@ const S = {
   canWrite: true, overrides: {}, elements: {}, views: {}, presentIdx: 0, uiHidden: false,
 };
 const PREF_KEYS = ['plan', 'labelMode', 'colorBy', 'signs', 'elLabels', 'wallH', 'corridorsOnly'];
+const DEFAULTS = Object.fromEntries(PREF_KEYS.map(k => [k, S[k]]));
 try { const p = JSON.parse(localStorage.getItem('fp3d.prefs2') || '{}'); PREF_KEYS.forEach(k => { if (p[k] !== undefined) S[k] = p[k]; }); } catch (e) {}
 const savePrefs = () => { try { localStorage.setItem('fp3d.prefs2', JSON.stringify(Object.fromEntries(PREF_KEYS.map(k => [k, S[k]])))); } catch (e) {} };
 
@@ -1255,6 +1256,7 @@ function renderPanel() {
         <button class="chip" id="o-ell" aria-pressed="${S.elLabels}">Item labels</button>
         <button class="chip" id="o-corr" aria-pressed="${S.corridorsOnly}">Walk: stay in corridors</button></div></div>
       <div class="optrow"><div class="eyebrow">Highlight</div><div class="chips">${Object.entries(STATUS).map(([k, l]) => `<button class="chip s-${k}" data-s="${k}" aria-pressed="${S.filter.has(k)}"><i class="dot"></i>${l}</button>`).join('')}</div></div>
+      <button class="btn" id="o-reset">Reset display to default</button>
       <div class="hint">${Store.kind === 'db' ? (S.canWrite ? 'Placed items, saved views and edits are shared with everyone who can open this page.' : 'You can view this plan. Ask the owner for edit access to place items.') : 'Changes are saved in this browser only. Use File to share a layout.'}</div>`;
     const segOn = (id, fn) => $$(`#${id} button`, P).forEach(b => b.onclick = () => { fn(b.dataset.v); savePrefs(); renderPanel(); });
     segOn('o-lab', v => { S.labelMode = v; fillLabels(); applyVisibility(); applyWallHeight(); });
@@ -1264,6 +1266,11 @@ function renderPanel() {
     $('#o-exp').oninput = (e) => { S.explode = +e.target.value; if (S.mode === 'overview' && S.display !== 'stack') { S.display = 'stack'; renderFloorbar(); } applyLayout(); };
     [['o-signs', 'signs'], ['o-ell', 'elLabels'], ['o-corr', 'corridorsOnly']].forEach(([id, k]) => $('#' + id).onclick = () => { S[k] = !S[k]; savePrefs(); applyVisibility(); renderPanel(); });
     $$('[data-s]', P).forEach(c => c.onclick = () => { const s = c.dataset.s; S.filter.has(s) ? S.filter.delete(s) : S.filter.add(s); applyColors(); renderPanel(); });
+    $('#o-reset').onclick = () => {
+      Object.assign(S, DEFAULTS); S.explode = 0.7; S.filter = new Set(Object.keys(STATUS));
+      try { localStorage.setItem('fp3d.prefs2', '{}'); } catch (e) {}
+      floorObjs.forEach(o => buildUnits(o, true)); fillLabels(); applyLayout(); applyColors(); applyWallHeight(); renderFloorbar(); renderPanel(); toast('Display reset to default');
+    };
     return;
   }
   if (S.panel === 'export') {
